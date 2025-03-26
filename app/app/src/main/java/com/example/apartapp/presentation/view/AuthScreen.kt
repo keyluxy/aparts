@@ -1,7 +1,9 @@
 package com.example.apartapp.presentation.view
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.apartapp.presentation.viewmodel.AuthViewModel
@@ -25,7 +28,8 @@ import com.example.apartapp.presentation.viewmodel.state.AuthState
 
 @Composable
 fun AuthScreen(
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    onAuthSuccess: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
@@ -35,6 +39,18 @@ fun AuthScreen(
     var isLoginMode by remember { mutableStateOf(true) }
 
     val authState = authViewModel.authState.collectAsState().value
+
+    when (authState) {
+        is AuthState.LoggedIn -> {
+            onAuthSuccess()
+        }
+
+        is AuthState.Registered -> {
+            onAuthSuccess()
+        }
+
+        else -> {}
+    }
 
     RegScreen(
         email = email,
@@ -54,7 +70,12 @@ fun AuthScreen(
             if (isLoginMode) {
                 authViewModel.login(email, password)
             } else {
-                authViewModel.register(email, password, firstName, lastName, middleName.ifBlank { null })
+                authViewModel.register(
+                    email,
+                    password,
+                    firstName,
+                    lastName,
+                    middleName.ifBlank { null })
             }
         }
     )
@@ -77,74 +98,85 @@ fun RegScreen(
     onToggleMode: () -> Unit,
     onAuthAction: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.padding(16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = if (isLoginMode) "Login" else "Register",
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = onEmailChange,
-            label = { Text(text = "Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text(text = "Password") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (!isLoginMode) {
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = firstName,
-                onValueChange = onFirstNameChange,
-                label = { Text(text = "First Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = lastName,
-                onValueChange = onLastNameChange,
-                label = { Text(text = "Last Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = middleName,
-                onValueChange = onMiddleNameChange,
-                label = { Text(text = "Middle Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = onAuthAction,
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Text(text = if (isLoginMode) "Login" else "Register")
-        }
+            Text(
+                text = if (isLoginMode) "Login" else "Register",
+                style = MaterialTheme.typography.bodyLarge
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = onToggleMode) {
-            Text(text = if (isLoginMode) "Don't have an account? Register" else "Already have an account? Login")
-        }
+            Spacer(modifier = Modifier.height(14.dp))
 
-        when (authState) {
-            is AuthState.Loading -> CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-            is AuthState.Error -> Text(text = "Error: ${authState.message}", color = MaterialTheme.colorScheme.error)
-            is AuthState.Registered -> Text(text = "Registered! User ID: ${authState.userId}")
-            is AuthState.LoggedIn -> Text(text = "Logged in! Token: ${authState.token}")
-            else -> {}
+            OutlinedTextField(
+                value = email,
+                onValueChange = onEmailChange,
+                label = { Text(text = "Email") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = { Text(text = "Password") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            if (!isLoginMode) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = firstName,
+                    onValueChange = onFirstNameChange,
+                    label = { Text(text = "First Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = lastName,
+                    onValueChange = onLastNameChange,
+                    label = { Text(text = "Last Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = middleName,
+                    onValueChange = onMiddleNameChange,
+                    label = { Text(text = "Middle Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onAuthAction,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = if (isLoginMode) "Login" else "Register")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onToggleMode) {
+                Text(text = if (isLoginMode) "Don't have an account? Register" else "Already have an account? Login")
+            }
+
+            when (authState) {
+                is AuthState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(16.dp))
+                is AuthState.Error -> Text(
+                    text = "Error: ${authState.message}",
+                    color = MaterialTheme.colorScheme.error
+                )
+
+                else -> {}
+            }
         }
     }
 }

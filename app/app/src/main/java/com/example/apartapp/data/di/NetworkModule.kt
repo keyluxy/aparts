@@ -26,7 +26,6 @@ class NetworkModule {
     @Singleton
     fun provideJson(): Json = Json {ignoreUnknownKeys = true}
 
-    @OptIn(ExperimentalSerializationApi::class)
     @Provides
     @Singleton
     fun provideRetrofit(json: Json): Retrofit {

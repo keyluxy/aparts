@@ -109,6 +109,9 @@ dependencies {
     //okhttp
     implementation(libs.okhttp)
 
+    // jetpack navigation
+    implementation(libs.androidx.navigation.compose)
+
 
 
 
