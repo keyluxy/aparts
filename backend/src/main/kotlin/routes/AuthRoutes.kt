@@ -6,6 +6,7 @@ import com.example.routes.dto.RegisterResponse
 import com.example.routes.dto.LoginResponse
 import com.example.routes.dto.ErrorResponse
 import com.example.service.AuthService
+import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -17,7 +18,7 @@ fun Route.authRoutes(authService: AuthService) {
 
             // Проверка обязательных полей
             if (registerRequest.firstName.isBlank() || registerRequest.lastName.isBlank()) {
-                call.respond(ErrorResponse("First name and last name are required"))
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("First name and last name are required"))
                 return@post
             }
 
@@ -28,9 +29,14 @@ fun Route.authRoutes(authService: AuthService) {
                 registerRequest.lastName,
                 registerRequest.middleName
             )
-            call.respond(RegisterResponse(status = "registered", userId = userId))
+            call.respond(HttpStatusCode.Created, RegisterResponse(status = "registered", userId = userId))
+        } catch (e: IllegalArgumentException) {
+            when (e.message) {
+                "Email already registered" -> call.respond(HttpStatusCode.Conflict, ErrorResponse("User already exists"))
+                else -> call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Registration failed"))
+            }
         } catch (e: Exception) {
-            call.respond(ErrorResponse(e.message ?: "Registration failed"))
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(e.message ?: "Registration failed"))
         }
     }
 
@@ -38,9 +44,15 @@ fun Route.authRoutes(authService: AuthService) {
         try {
             val loginRequest = call.receive<LoginRequest>()
             val token = authService.login(loginRequest.email, loginRequest.password)
-            call.respond(LoginResponse(token = token))
+            call.respond(HttpStatusCode.OK, LoginResponse(token = token))
+        } catch (e: IllegalArgumentException) {
+            when (e.message) {
+                "User not found" -> call.respond(HttpStatusCode.NotFound, ErrorResponse("User not found"))
+                "Invalid credentials" -> call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid password"))
+                else -> call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Login failed"))
+            }
         } catch (e: Exception) {
-            call.respond(ErrorResponse(e.message ?: "Login failed"))
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(e.message ?: "Login failed"))
         }
     }
 }
