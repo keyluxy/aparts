@@ -32,8 +32,6 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
 
-
-
             when (val validationResult = AuthValidation.validateRegistration(
                 email,
                 password,

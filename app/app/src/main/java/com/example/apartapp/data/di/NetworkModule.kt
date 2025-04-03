@@ -2,6 +2,7 @@ package com.example.apartapp.data.di
 
 import androidx.room.Insert
 import com.example.apartapp.data.remote.AuthApiService
+import com.example.apartapp.data.remote.ParsingApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -41,4 +42,8 @@ class NetworkModule {
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService =
         retrofit.create(AuthApiService::class.java)
 
+    @Provides
+    @Singleton
+    fun provideParsingApiService(retrofit: Retrofit): ParsingApiService =
+        retrofit.create(ParsingApiService::class.java)
 }

@@ -1,4 +1,3 @@
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
@@ -40,10 +39,6 @@ dependencies {
     // Библиотека для хеширования паролей
     implementation("at.favre.lib:bcrypt:0.9.0")
 
-    implementation("org.jetbrains.exposed:exposed-core:0.41.1")
-    implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
-
     // Зависимость для работы с java.time
     implementation("org.jetbrains.exposed:exposed-java-time:0.41.1")
 
@@ -51,12 +46,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.0")
 
-    implementation("org.jsoup:jsoup:1.15.3") // Библиотека Jsoup для парсинга HTML
-    implementation("it.skrape:skrapeit:1.2.1")
-
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.4.3")
 
     implementation("io.ktor:ktor-client-cio:2.3.0")
 
+    // Зависимости для работы с Excel
+    implementation("org.apache.poi:poi:5.2.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
 }

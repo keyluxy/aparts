@@ -5,6 +5,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import com.example.database.db_factory.DatabaseInitializer
 
+
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
@@ -12,12 +13,8 @@ fun main() {
 
 fun Application.module() {
     configureSerialization()
-    // Инициализируем базу данных и создаем таблицы
     DatabaseInitializer.init()
 
-
     configureSecurity()
-
     configureRouting()
-
 }
