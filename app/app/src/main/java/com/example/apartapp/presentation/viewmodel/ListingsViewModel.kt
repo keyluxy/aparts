@@ -2,40 +2,45 @@ package com.example.apartapp.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.apartapp.domain.usecases.StartParsingUseCase
+import com.example.apartapp.domain.model.Listing
+import com.example.apartapp.domain.usecases.GetListingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed class ParsingState {
-    object Idle : ParsingState()
-    object Loading : ParsingState()
-    data class Success(val message: String) : ParsingState()
-    data class Error(val message: String) : ParsingState()
-}
-
 @HiltViewModel
 class ListingsViewModel @Inject constructor(
-    private val startParsingUseCase: StartParsingUseCase
+    private val getListingsUseCase: GetListingsUseCase
 ) : ViewModel() {
 
-    private val _parsingState = MutableStateFlow<ParsingState>(ParsingState.Idle)
-    val parsingState: StateFlow<ParsingState> = _parsingState
+    private val _listings = MutableStateFlow<List<Listing>>(emptyList())
+    val listings: StateFlow<List<Listing>> = _listings
 
-    fun startParsing() {
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    init {
+        fetchListings()
+    }
+
+    fun fetchListings() {
         viewModelScope.launch {
-            _parsingState.value = ParsingState.Loading
-
-            startParsingUseCase().fold(
-                onSuccess = { message ->
-                    _parsingState.value = ParsingState.Success(message)
+            _isLoading.value = true
+            _errorMessage.value = null
+            getListingsUseCase().fold(
+                onSuccess = { fetchedListings ->
+                    _listings.value = fetchedListings
                 },
                 onFailure = { throwable ->
-                    _parsingState.value = ParsingState.Error(throwable.message ?: "Ошибка при запуске парсера")
+                    _errorMessage.value = throwable.message ?: "Ошибка загрузки объявлений"
                 }
             )
+            _isLoading.value = false
         }
     }
-} 
+}

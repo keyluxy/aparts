@@ -1,9 +1,9 @@
 package com.example.apartapp.data.di
 
 import com.example.apartapp.data.repository.AuthRepositoryImpl
-import com.example.apartapp.data.repository.ParsingRepositoryImpl
+import com.example.apartapp.data.repository.ListingsRepositoryImpl
 import com.example.apartapp.domain.repository.AuthRepository
-import com.example.apartapp.domain.repository.ParsingRepository
+import com.example.apartapp.domain.repository.ListingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -20,5 +20,5 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindParsingRepository(parsingRepositoryImpl: ParsingRepositoryImpl): ParsingRepository
+    abstract fun bindListingsRepository(listingsRepositoryImpl: ListingsRepositoryImpl): ListingsRepository
 }
