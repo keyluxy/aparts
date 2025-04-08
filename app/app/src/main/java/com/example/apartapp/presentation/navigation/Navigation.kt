@@ -1,12 +1,12 @@
 package com.example.apartapp.presentation.navigation
 
+import ListingsScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.apartapp.presentation.view.AuthScreen
-import com.example.apartapp.presentation.view.ListingsScreen
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")

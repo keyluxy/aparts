@@ -28,7 +28,7 @@ class ListingsViewModel @Inject constructor(
         fetchListings()
     }
 
-    fun fetchListings() {
+    private fun fetchListings() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null

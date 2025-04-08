@@ -112,11 +112,12 @@ dependencies {
     // jetpack navigation
     implementation(libs.androidx.navigation.compose)
 
+    implementation (libs.accompanist.pager)
+    implementation (libs.accompanist.pager.indicators)
 
-
-
-
-
+    implementation (libs.androidx.foundation)
+    implementation (libs.coil.compose)
+    implementation(libs.coil.compose.v210)
 
 }
 

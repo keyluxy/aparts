@@ -8,5 +8,6 @@ data class Listing(
     val description: String?,
     val price: BigDecimal,
     val address: String?,
-    val url: String
+    val url: String? = null,
+    val imageUrls: List<String> = emptyList()
 )

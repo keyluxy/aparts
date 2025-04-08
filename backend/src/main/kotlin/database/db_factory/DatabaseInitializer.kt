@@ -10,10 +10,10 @@ object DatabaseInitializer {
         DatabaseFactory.init()
 
         transaction {
-//            SchemaUtils.drop(Favorites, Listings, Cities, Users)
-            SchemaUtils.create(Users, Sources, Cities, Listings, Favorites)
+            // Удаляем старые таблицы, если они существуют (обратите внимание на порядок)
+//            SchemaUtils.drop(ListingImages, Favorites, Listings, Cities, Sources, Users)
+            // Создаем новые таблицы – сначала базовые, затем зависимости
+            SchemaUtils.create(Users, Sources, Cities, Listings, Favorites, ListingImages)
         }
-
-
     }
 }
