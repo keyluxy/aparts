@@ -26,6 +26,7 @@ import com.example.apartapp.presentation.viewmodel.AuthViewModel
 import androidx.compose.ui.Modifier
 import com.example.apartapp.presentation.viewmodel.state.AuthState
 
+
 @Composable
 fun AuthScreen(
     authViewModel: AuthViewModel = hiltViewModel(),

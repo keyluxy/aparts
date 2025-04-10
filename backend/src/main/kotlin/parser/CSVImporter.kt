@@ -25,8 +25,8 @@ object CSVImporter {
         }.readAllWithHeader(File(filePath))
 
         transaction {
-            csvData.forEach { row ->
-                val title = row["title"] ?: return@forEach
+            csvData.forEachIndexed { index, row ->
+                val title = row["title"] ?: return@forEachIndexed
                 val description = row["description"]
                 val price = row["price"]?.toBigDecimalOrNull() ?: BigDecimal.ZERO
                 val address = row["address"]
@@ -41,7 +41,7 @@ object CSVImporter {
                 }
                 val seller = row["seller"]
                 val sellerUrl = row["seller_url"]
-                val imagePath = row["image_data"]?.trim()
+                val imageBasePath = row["image_data"]?.trim() ?: "" // теперь это путь до uploads
 
                 // Обработка источника
                 val sourceUrl = row["url"]?.trim() ?: "default"
@@ -77,19 +77,23 @@ object CSVImporter {
                     it[Listings.cityId] = cityId
                 } get Listings.id
 
-                // Обработка изображения
-                if (!imagePath.isNullOrEmpty()) {
-                    val imageFile = File(imagePath)
-                    if (imageFile.exists()) {
+                // Автоматическая загрузка всех картинок из папки uploads/img_N
+                val folderIndex = index + 1 // img_1 для первой строки, и т.д.
+                val imageDir = File("$imageBasePath/img_$folderIndex")
+
+                if (imageDir.exists() && imageDir.isDirectory) {
+                    imageDir.listFiles { file ->
+                        file.isFile && (file.extension.lowercase() in listOf("png", "jpg", "jpeg"))
+                    }?.forEach { imageFile ->
                         val imageData = imageFile.readBytes()
                         ListingImages.insert {
                             it[ListingImages.listingId] = listingId
                             it[ListingImages.imageData] = imageData
-                            println("Файл изображения успешно найден!!!")
                         }
-                    } else {
-                        println("Файл изображения не найден: $imagePath")
+                        println("✅ Загружено изображение: ${imageFile.name} -> listing_id: $listingId")
                     }
+                } else {
+                    println("⚠️ Папка с изображениями не найдена: ${imageDir.absolutePath}")
                 }
             }
         }
@@ -100,6 +104,7 @@ object CSVImporter {
         return regex.find(url)?.groups?.get(1)?.value
     }
 }
+
 
 fun main() {
     DatabaseInitializer.init()

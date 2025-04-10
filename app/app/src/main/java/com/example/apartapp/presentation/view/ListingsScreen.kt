@@ -38,6 +38,7 @@ import coil.request.ImageRequest
 import com.example.apartapp.domain.model.Listing
 import com.example.apartapp.presentation.viewmodel.ListingsViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.apartapp.presentation.view.filter.FilterSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,57 +48,61 @@ fun ListingsScreen(
     val listings by viewModel.listings.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val filters by viewModel.filters.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Список объявлений") })
         }
     ) { paddingValues ->
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            FilterSection(filter = filters, onFilterChange = {
+                viewModel.updateFilters(it)
+            })
+
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            errorMessage != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = errorMessage ?: "Ошибка")
+                errorMessage != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = errorMessage ?: "Ошибка")
+                    }
                 }
-            }
-            listings.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "Нет объявлений")
+                listings.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "Нет объявлений")
+                    }
                 }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    items(listings) { listing ->
-                        ListingCard(listing = listing)
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(listings) { listing ->
+                            ListingCard(listing = listing)
+                        }
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun ListingCard(listing: Listing) {

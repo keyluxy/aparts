@@ -13,6 +13,12 @@ data class ListingDto(
     val price: BigDecimal,
     val address: String? = null,
     val url: String? = null,
-    val imageUrls: List<String>? = null  // здесь может приходить null
+    val imageUrls: List<String>? = null,
+    val city: String?,
+    val rooms: Int?,
 )
+
+
+
+
 

@@ -8,6 +8,9 @@ data class Listing(
     val description: String?,
     val price: BigDecimal,
     val address: String?,
+    val city: String?,
+    val rooms: Int?,
     val url: String? = null,
     val imageUrls: List<String> = emptyList()
 )
+

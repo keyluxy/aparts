@@ -1,3 +1,5 @@
+@file:Suppress("UNUSED_EXPRESSION")
+
 package com.example.apartapp.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel

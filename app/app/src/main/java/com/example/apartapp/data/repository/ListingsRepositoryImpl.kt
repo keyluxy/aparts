@@ -20,9 +20,12 @@ class ListingsRepositoryImpl @Inject constructor(
                 description = dto.description,
                 price = dto.price,
                 address = dto.address,
+                city = dto.city,   // Передаем город из dto
+                rooms = dto.rooms, // Если есть поле для комнат
                 url = dto.url,
                 imageUrls = imageUrls
             )
         }
+
     }
 }
