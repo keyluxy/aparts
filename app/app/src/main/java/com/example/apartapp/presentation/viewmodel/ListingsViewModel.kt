@@ -16,6 +16,7 @@ class ListingsViewModel @Inject constructor(
     private val getListingsUseCase: GetListingsUseCase
 ) : ViewModel() {
 
+    private val _allListings = MutableStateFlow<List<Listing>>(emptyList()) // Сохраняем все объявления
     private val _listings = MutableStateFlow<List<Listing>>(emptyList())
     val listings: StateFlow<List<Listing>> = _listings
 
@@ -38,7 +39,8 @@ class ListingsViewModel @Inject constructor(
             _errorMessage.value = null
             getListingsUseCase().fold(
                 onSuccess = { fetchedListings ->
-                    _listings.value = fetchedListings
+                    _allListings.value = fetchedListings // Сохраняем все полученные объявления
+                    _listings.value = fetchedListings // Изначально отображаем все объявления
                 },
                 onFailure = { throwable ->
                     _errorMessage.value = throwable.message ?: "Ошибка загрузки объявлений"
@@ -54,12 +56,12 @@ class ListingsViewModel @Inject constructor(
     }
 
     private fun applyFilters() {
-        val allListings = _listings.value
+        val allListings = _allListings.value // Используем сохраненный список всех объявлений
         val currentFilters = _filters.value
 
         _listings.value = allListings.filter { listing ->
             val priceMatch = (currentFilters.minPrice == null || listing.price >= currentFilters.minPrice) &&
-                    (currentFilters.maxPrice == null || listing.price <= currentFilters.maxPrice)
+                    (currentFilters.maxPrice == null || currentFilters.maxPrice.let { listing.price <= it })
 
             val roomsMatch = (currentFilters.minRooms == null || (listing.rooms ?: 0) >= currentFilters.minRooms) &&
                     (currentFilters.maxRooms == null || (listing.rooms ?: 0) <= currentFilters.maxRooms)
@@ -70,3 +72,4 @@ class ListingsViewModel @Inject constructor(
         }
     }
 }
+

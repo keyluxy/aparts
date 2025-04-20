@@ -18,7 +18,9 @@ fun Route.listingsRoutes() {
         val formatter = DateTimeFormatter.ISO_DATE_TIME
 
         // Базовый URL сервера, его можно вынести в конфиг
-        val baseUrl = "http://10.178.204.18:8080"
+//        val baseUrl = "http://10.178.204.18:8080"
+        val baseUrl = "http://0.0.0.0:8080"
+
 
         // Выполняем запрос к базе и мапим каждую строку в ListingResponse
         val listings = transaction {

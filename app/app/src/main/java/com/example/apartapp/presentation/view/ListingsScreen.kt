@@ -1,8 +1,10 @@
 import android.util.Log
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -50,6 +52,16 @@ fun ListingsScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val filters by viewModel.filters.collectAsState()
 
+    var isFilterVisible by remember { mutableStateOf(true) }
+    val scrollState = rememberLazyListState()
+
+    LaunchedEffect(scrollState) {
+        snapshotFlow { scrollState.firstVisibleItemScrollOffset }
+            .collect { offset ->
+                isFilterVisible = offset == 0 || scrollState.firstVisibleItemIndex == 0
+            }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Список объявлений") })
@@ -60,9 +72,16 @@ fun ListingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            FilterSection(filter = filters, onFilterChange = {
-                viewModel.updateFilters(it)
-            })
+            AnimatedVisibility(
+                visible = isFilterVisible,
+                enter = slideInVertically() + fadeIn(),
+                exit = slideOutVertically() + fadeOut()
+            ) {
+                FilterSection(
+                    filter = filters,
+                    onFilterChange = { viewModel.updateFilters(it) }
+                )
+            }
 
             when {
                 isLoading -> {
@@ -91,6 +110,7 @@ fun ListingsScreen(
                 }
                 else -> {
                     LazyColumn(
+                        state = scrollState,
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(listings) { listing ->
