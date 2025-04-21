@@ -10,22 +10,19 @@ class ListingsRepositoryImpl @Inject constructor(
 ) : ListingsRepository {
     override suspend fun getListings(): List<Listing> {
         val listingsDto = apiService.getListings()
-
         return listingsDto.map { dto ->
-            // Формируем URL-ы для изображений, если список imageUrls отсутствует (null), заменяем на emptyList()
-            val imageUrls = dto.imageUrls ?: emptyList()
             Listing(
                 id = dto.id,
                 title = dto.title,
                 description = dto.description,
                 price = dto.price,
                 address = dto.address,
-                city = dto.city,   // Передаем город из dto
-                rooms = dto.rooms, // Если есть поле для комнат
+                city = dto.city,
+                rooms = dto.rooms,
                 url = dto.url,
-                imageUrls = imageUrls
+                imageUrls = dto.imageUrls ?: emptyList(),
+                sourceName = dto.sourceName
             )
         }
-
     }
 }

@@ -41,14 +41,16 @@ object CSVImporter {
                 }
                 val seller = row["seller"]
                 val sellerUrl = row["seller_url"]
-                val imageBasePath = row["image_data"]?.trim() ?: "" // теперь это путь до uploads
+                val imageBasePath = row["image_data"]?.trim() ?: ""
 
                 // Обработка источника
                 val sourceUrl = row["url"]?.trim() ?: "default"
+                val sourceName = extractSourceNameFromUrl(sourceUrl) ?: "Неизвестно"
+
                 val sourceId = Sources.select { Sources.url eq sourceUrl }
                     .firstOrNull()?.get(Sources.id)
                     ?: Sources.insert {
-                        it[name] = URI(sourceUrl).host
+                        it[name] = sourceName
                         it[url] = sourceUrl
                     }.resultedValues?.firstOrNull()?.get(Sources.id)
                     ?: throw Exception("Не удалось вставить источник: $sourceUrl")
@@ -78,7 +80,7 @@ object CSVImporter {
                 } get Listings.id
 
                 // Автоматическая загрузка всех картинок из папки uploads/img_N
-                val folderIndex = index + 1 // img_1 для первой строки, и т.д.
+                val folderIndex = index + 1
                 val imageDir = File("$imageBasePath/img_$folderIndex")
 
                 if (imageDir.exists() && imageDir.isDirectory) {
@@ -103,8 +105,16 @@ object CSVImporter {
         val regex = Regex("https?://(?:www\\.)?avito\\.ru/([^/]+)/")
         return regex.find(url)?.groups?.get(1)?.value
     }
-}
 
+    private fun extractSourceNameFromUrl(url: String): String? {
+        return when {
+            url.contains("avito") -> "Avito"
+            url.contains("cian") -> "Циан"
+            url.contains("domclick") -> "Домклик"
+            else -> URI(url).host // Используем host в качестве fallback
+        }
+    }
+}
 
 fun main() {
     DatabaseInitializer.init()

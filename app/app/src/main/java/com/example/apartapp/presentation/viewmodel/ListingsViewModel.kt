@@ -1,5 +1,6 @@
 package com.example.apartapp.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.apartapp.domain.model.Listing
@@ -39,8 +40,11 @@ class ListingsViewModel @Inject constructor(
             _errorMessage.value = null
             getListingsUseCase().fold(
                 onSuccess = { fetchedListings ->
-                    _allListings.value = fetchedListings // Сохраняем все полученные объявления
-                    _listings.value = fetchedListings // Изначально отображаем все объявления
+                    fetchedListings.forEach {
+                        Log.d("ListingsViewModel", "Listing city: ${it.city}, sourceName: ${it.sourceName}, url: ${it.url}")
+                    }
+                    _allListings.value = fetchedListings
+                    _listings.value = fetchedListings
                 },
                 onFailure = { throwable ->
                     _errorMessage.value = throwable.message ?: "Ошибка загрузки объявлений"

@@ -1,15 +1,12 @@
 package com.example.apartapp.data.di
 
-import androidx.room.Insert
 import com.example.apartapp.data.remote.AuthApiService
 import com.example.apartapp.data.remote.ListingsApiService
 import com.example.apartapp.data.remote.ParsingApiService
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit

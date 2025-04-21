@@ -10,7 +10,7 @@ data class Listing(
     val address: String?,
     val city: String?,
     val rooms: Int?,
-    val url: String? = null,
-    val imageUrls: List<String> = emptyList()
+    val url: String? = null,          // ссылка на источник
+    val imageUrls: List<String> = emptyList(),
+    val sourceName: String? = null    // название источника
 )
-
