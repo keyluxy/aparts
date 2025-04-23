@@ -1,8 +1,10 @@
 package com.example.apartapp.data.di
 
 import com.example.apartapp.data.repository.AuthRepositoryImpl
+import com.example.apartapp.data.repository.FavoritesRepositoryImpl
 import com.example.apartapp.data.repository.ListingsRepositoryImpl
 import com.example.apartapp.domain.repository.AuthRepository
+import com.example.apartapp.domain.repository.FavoritesRepository
 import com.example.apartapp.domain.repository.ListingsRepository
 import dagger.Binds
 import dagger.Module
@@ -21,4 +23,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindListingsRepository(listingsRepositoryImpl: ListingsRepositoryImpl): ListingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFavoritesRepository(
+        favoritesRepositoryImpl: FavoritesRepositoryImpl
+    ): FavoritesRepository
 }

@@ -31,9 +31,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 @Composable
-fun ListingCard(listing: Listing) {
+fun ListingCard(
+    listing: Listing,
+    isFavorite: Boolean,
+    onFavoriteClick: (Listing) -> Unit
+) {
     val context = LocalContext.current
-    var isFavorite by remember { mutableStateOf(false) } // Состояние избранного
+    var favoriteState by remember { mutableStateOf(isFavorite) }
 
     Card(
         modifier = Modifier
@@ -50,10 +54,7 @@ fun ListingCard(listing: Listing) {
             ) {
                 if (listing.imageUrls.isNotEmpty()) {
                     AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(listing.imageUrls.first())
-                            .crossfade(true)
-                            .build(),
+                        model = listing.imageUrls.first(),
                         contentDescription = "Изображение объявления",
                         modifier = Modifier
                             .fillMaxSize()
@@ -72,17 +73,19 @@ fun ListingCard(listing: Listing) {
                     }
                 }
 
-                // Иконка избранного в правом верхнем углу
                 IconButton(
-                    onClick = { isFavorite = !isFavorite },
+                    onClick = {
+                        favoriteState = !favoriteState
+                        onFavoriteClick(listing)
+                    },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
                 ) {
                     Icon(
-                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Добавить в избранное",
-                        tint = if (isFavorite) Color.Red else Color.White
+                        imageVector = if (favoriteState) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Избранное",
+                        tint = if (favoriteState) Color.Red else Color.White
                     )
                 }
             }
@@ -123,4 +126,6 @@ fun ListingCard(listing: Listing) {
         }
     }
 }
+
+
 

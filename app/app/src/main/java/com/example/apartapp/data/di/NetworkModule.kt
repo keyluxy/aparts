@@ -1,6 +1,7 @@
 package com.example.apartapp.data.di
 
 import com.example.apartapp.data.remote.AuthApiService
+import com.example.apartapp.data.remote.FavoritesApiService
 import com.example.apartapp.data.remote.ListingsApiService
 import com.example.apartapp.data.remote.ParsingApiService
 import dagger.Module
@@ -51,6 +52,12 @@ class NetworkModule {
     @Singleton
     fun provideListingsApiService(retrofit: Retrofit): ListingsApiService =
         retrofit.create(ListingsApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideFavoritesApiService(retrofit: Retrofit): FavoritesApiService =
+        retrofit.create(FavoritesApiService::class.java)
+
 
 }
 

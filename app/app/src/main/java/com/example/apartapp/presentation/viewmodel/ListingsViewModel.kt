@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.apartapp.domain.model.Listing
 import com.example.apartapp.domain.model.ListingsFilter
+import com.example.apartapp.domain.repository.FavoritesRepository
 import com.example.apartapp.domain.usecases.GetListingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,10 +15,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ListingsViewModel @Inject constructor(
-    private val getListingsUseCase: GetListingsUseCase
+    private val getListingsUseCase: GetListingsUseCase,
+    private val favoritesRepository: FavoritesRepository
 ) : ViewModel() {
 
-    private val _allListings = MutableStateFlow<List<Listing>>(emptyList()) // Сохраняем все объявления
+    private val _allListings = MutableStateFlow<List<Listing>>(emptyList())
     private val _listings = MutableStateFlow<List<Listing>>(emptyList())
     val listings: StateFlow<List<Listing>> = _listings
 
@@ -30,8 +32,19 @@ class ListingsViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    // Состояние избранного
+    private val _favoriteIds = MutableStateFlow<Set<Int>>(emptySet())
+    val favoriteIds: StateFlow<Set<Int>> = _favoriteIds
+
+    var userId: Int? = null
+
     init {
         fetchListings()
+    }
+
+    fun setUserId(userId: Int) {
+        this.userId = userId
+        loadFavorites()
     }
 
     private fun fetchListings() {
@@ -40,11 +53,8 @@ class ListingsViewModel @Inject constructor(
             _errorMessage.value = null
             getListingsUseCase().fold(
                 onSuccess = { fetchedListings ->
-                    fetchedListings.forEach {
-                        Log.d("ListingsViewModel", "Listing city: ${it.city}, sourceName: ${it.sourceName}, url: ${it.url}")
-                    }
                     _allListings.value = fetchedListings
-                    _listings.value = fetchedListings
+                    applyFilters()
                 },
                 onFailure = { throwable ->
                     _errorMessage.value = throwable.message ?: "Ошибка загрузки объявлений"
@@ -78,5 +88,36 @@ class ListingsViewModel @Inject constructor(
         }
     }
 
+    private fun loadFavorites() {
+        viewModelScope.launch {
+            try {
+                val favs = favoritesRepository.getFavorites(userId ?: return@launch)
+                _favoriteIds.value = favs.map { it.id }.toSet()
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Ошибка загрузки избранного"
+            }
+        }
+    }
+
+    fun toggleFavorite(listing: Listing) {
+        viewModelScope.launch {
+            try {
+                val user = userId ?: return@launch
+                val currentFavorites = _favoriteIds.value.toMutableSet()
+                if (currentFavorites.contains(listing.id)) {
+                    favoritesRepository.removeFavorite(user, listing.id)
+                    currentFavorites.remove(listing.id)
+                } else {
+                    favoritesRepository.addFavorite(user, listing.id)
+                    currentFavorites.add(listing.id)
+                }
+                _favoriteIds.value = currentFavorites.toSet()
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Ошибка изменения избранного"
+            }
+        }
+    }
 }
+
+
 
