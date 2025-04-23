@@ -60,7 +60,7 @@ class ListingsViewModel @Inject constructor(
     }
 
     private fun applyFilters() {
-        val allListings = _allListings.value // Используем сохраненный список всех объявлений
+        val allListings = _allListings.value
         val currentFilters = _filters.value
 
         _listings.value = allListings.filter { listing ->
@@ -72,8 +72,11 @@ class ListingsViewModel @Inject constructor(
 
             val cityMatch = currentFilters.city.isNullOrBlank() || listing.city.equals(currentFilters.city, ignoreCase = true)
 
-            priceMatch && roomsMatch && cityMatch
+            val sourceMatch = currentFilters.source.isNullOrBlank() || listing.sourceName.equals(currentFilters.source, ignoreCase = true)
+
+            priceMatch && roomsMatch && cityMatch && sourceMatch
         }
     }
+
 }
 
