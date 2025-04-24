@@ -23,7 +23,7 @@ class FavoritesRepositoryImpl @Inject constructor(
                 city = dto.city,
                 rooms = null,
                 url = dto.url,
-                imageUrls = dto.imageUrls ?: emptyList(), // <- безопасный вызов
+                imageUrls = dto.imageUrls ?: emptyList(),
                 sourceName = dto.sourceName
             )
         }
@@ -33,6 +33,7 @@ class FavoritesRepositoryImpl @Inject constructor(
     override suspend fun addFavorite(userId: Int, listingId: Int) {
         apiService.addFavorite(userId, listingId)
     }
+
 
     override suspend fun removeFavorite(userId: Int, listingId: Int) {
         apiService.removeFavorite(userId, listingId)

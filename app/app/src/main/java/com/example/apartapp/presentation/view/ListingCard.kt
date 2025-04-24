@@ -2,12 +2,16 @@ package com.example.apartapp.presentation.view
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,31 +22,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.example.apartapp.domain.model.Listing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 
 @Composable
 fun ListingCard(
     listing: Listing,
     isFavorite: Boolean,
-    onFavoriteClick: (Listing) -> Unit
+    onFavoriteClick: (Listing) -> Unit,
+    onListingClick: () -> Unit
 ) {
     val context = LocalContext.current
-    var favoriteState by remember { mutableStateOf(isFavorite) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(8.dp)
+            .animateContentSize()
+            .clickable { onListingClick() },
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -55,7 +53,7 @@ fun ListingCard(
                 if (listing.imageUrls.isNotEmpty()) {
                     AsyncImage(
                         model = listing.imageUrls.first(),
-                        contentDescription = "Изображение объявления",
+                        contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(8.dp)),
@@ -74,19 +72,19 @@ fun ListingCard(
                 }
 
                 IconButton(
-                    onClick = {
-                        favoriteState = !favoriteState
-                        onFavoriteClick(listing)
-                    },
+                    onClick = { onFavoriteClick(listing) },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
                 ) {
-                    Icon(
-                        imageVector = if (favoriteState) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Избранное",
-                        tint = if (favoriteState) Color.Red else Color.White
-                    )
+                    Crossfade(targetState = isFavorite) { fav ->
+                        val tint by animateColorAsState(if (fav) Color.Red else Color.White)
+                        Icon(
+                            imageVector = if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = null,
+                            tint = tint
+                        )
+                    }
                 }
             }
 
@@ -99,7 +97,7 @@ fun ListingCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "$${listing.price}",
+                text = "\$${listing.price}",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
@@ -109,23 +107,18 @@ fun ListingCard(
                 text = listing.city ?: "Город не указан",
                 style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            listing.sourceName?.let { sourceName ->
+            if (!listing.sourceName.isNullOrEmpty() && !listing.url.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = sourceName,
+                    text = "Источник: ${listing.sourceName}",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.clickable {
-                        listing.url?.let { url ->
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                            context.startActivity(intent)
-                        }
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(listing.url))
+                        context.startActivity(intent)
                     }
                 )
             }
         }
     }
 }
-
-
-

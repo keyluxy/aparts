@@ -7,4 +7,5 @@ sealed class AuthState {
     data class Registered (val userId: Int): AuthState()
     data class LoggedIn (val token: String): AuthState()
     data class Error (val message: String): AuthState()
+
 }

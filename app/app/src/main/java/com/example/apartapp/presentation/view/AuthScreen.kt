@@ -14,6 +14,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +31,7 @@ import com.example.apartapp.presentation.viewmodel.state.AuthState
 @Composable
 fun AuthScreen(
     authViewModel: AuthViewModel = hiltViewModel(),
-    onAuthSuccess: () -> Unit
+    onAuthSuccess: (userId: Int) -> Unit // Добавляем userId
 ) {
     var email by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
@@ -39,18 +40,23 @@ fun AuthScreen(
     var password by remember { mutableStateOf("") }
     var isLoginMode by remember { mutableStateOf(true) }
 
-    val authState = authViewModel.authState.collectAsState().value
+    val authState by authViewModel.authState.collectAsState()
 
-    when (authState) {
-        is AuthState.LoggedIn -> {
-            onAuthSuccess()
+    /*
+       Добавляем блок LaunchedEffect для обработки userId
+       после успешной регистрации или логина
+    */
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Registered -> {
+                onAuthSuccess((authState as AuthState.Registered).userId)
+            }
+            is AuthState.LoggedIn -> {
+                val userId = authViewModel.getUserIdFromToken((authState as AuthState.LoggedIn).token)
+                onAuthSuccess(userId)
+            }
+            else -> {}
         }
-
-        is AuthState.Registered -> {
-            onAuthSuccess()
-        }
-
-        else -> {}
     }
 
     RegScreen(
@@ -81,6 +87,7 @@ fun AuthScreen(
         }
     )
 }
+
 
 @Composable
 fun RegScreen(

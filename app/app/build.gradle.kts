@@ -119,6 +119,8 @@ dependencies {
     implementation (libs.coil.compose)
     implementation(libs.coil.compose.v210)
 
+    implementation(libs.jjwt.api)
+
 }
 
 kapt {

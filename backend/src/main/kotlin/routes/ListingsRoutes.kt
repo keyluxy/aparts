@@ -12,10 +12,13 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.format.DateTimeFormatter
 
+const val baseUrl = "http://10.178.204.18:8080/"
+
+
 fun Route.listingsRoutes() {
     get("/listings") {
         val formatter = DateTimeFormatter.ISO_DATE_TIME
-        val baseUrl = "http://0.0.0.0:8080"
+//        val baseUrl = "http://0.0.0.0:8080"
 
         val listings = transaction {
             (Listings innerJoin Sources innerJoin Cities).slice(

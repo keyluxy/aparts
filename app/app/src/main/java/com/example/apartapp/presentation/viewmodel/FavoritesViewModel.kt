@@ -24,15 +24,30 @@ class FavoritesViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+
     fun loadFavorites(userId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                val favs = favoritesRepository.getFavorites(userId)
-                _favorites.value = favs
+                _favorites.value = favoritesRepository.getFavorites(userId)
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Ошибка загрузки избранного"
+            }
+            _isLoading.value = false
+        }
+    }
+
+    /** Удаляет из избранного, а затем перезагружает список */
+    fun removeFavoriteAndRefresh(userId: Int, listingId: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                favoritesRepository.removeFavorite(userId, listingId)
+                // заново забираем актуальный список
+                _favorites.value = favoritesRepository.getFavorites(userId)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Ошибка удаления из избранного"
             }
             _isLoading.value = false
         }
