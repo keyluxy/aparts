@@ -11,7 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import retrofit2.HttpException           // <- обязательно
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,20 +20,20 @@ class ListingsViewModel @Inject constructor(
     private val favoritesRepository: FavoritesRepository
 ) : ViewModel() {
 
-    private val _allListings   = MutableStateFlow<List<Listing>>(emptyList())
-    private val _listings      = MutableStateFlow<List<Listing>>(emptyList())
+    private val _allListings = MutableStateFlow<List<Listing>>(emptyList())
+    private val _listings = MutableStateFlow<List<Listing>>(emptyList())
     val listings: StateFlow<List<Listing>> = _listings
 
-    private val _isLoading     = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
-
-    private val _filters       = MutableStateFlow(ListingsFilter())
+    private val _filters = MutableStateFlow(ListingsFilter())
     val filters: StateFlow<ListingsFilter> = _filters
 
-    private val _errorMessage  = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _favoriteIds   = MutableStateFlow<Set<Int>>(emptySet())
+    private val _error = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _error
+
+    private val _favoriteIds = MutableStateFlow<Set<Int>>(emptySet())
     val favoriteIds: StateFlow<Set<Int>> = _favoriteIds
 
     private var userId: Int? = null
@@ -42,27 +42,9 @@ class ListingsViewModel @Inject constructor(
         fetchListings()
     }
 
-    /** Устанавливаем userId и сразу подгружаем избранное */
-    fun setUserId(userId: Int) {
-        this.userId = userId
+    fun setUserId(id: Int) {
+        userId = id
         loadFavorites()
-    }
-
-    private fun fetchListings() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-            getListingsUseCase().fold(
-                onSuccess = { fetched ->
-                    _allListings.value = fetched
-                    applyFilters()
-                },
-                onFailure = { t ->
-                    _errorMessage.value = t.message ?: "Ошибка загрузки объявлений"
-                }
-            )
-            _isLoading.value = false
-        }
     }
 
     fun updateFilters(newFilters: ListingsFilter) {
@@ -70,55 +52,87 @@ class ListingsViewModel @Inject constructor(
         applyFilters()
     }
 
-    private fun applyFilters() {
-        val all = _allListings.value
-        val f   = _filters.value
-
-        _listings.value = all.filter { listing ->
-            val priceMatch = (f.minPrice == null || listing.price >= f.minPrice) &&
-                    (f.maxPrice == null || listing.price <= f.maxPrice)
-            val roomsMatch = (f.minRooms == null || (listing.rooms ?: 0) >= f.minRooms) &&
-                    (f.maxRooms == null || (listing.rooms ?: 0) <= f.maxRooms)
-            val cityMatch  = f.city.isNullOrBlank() || listing.city.equals(f.city, ignoreCase = true)
-            val srcMatch   = f.source.isNullOrBlank() || listing.sourceName.equals(f.source, ignoreCase = true)
-            priceMatch && roomsMatch && cityMatch && srcMatch
+    private fun fetchListings() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            getListingsUseCase().fold(
+                onSuccess = {
+                    _allListings.value = it
+                    applyFilters()
+                },
+                onFailure = { t -> _error.value = t.message }
+            )
+            _isLoading.value = false
         }
     }
+
+
+    private fun applyFilters() {
+        val all = _allListings.value
+        val f = _filters.value
+
+        _listings.value = all.filter { listing ->
+            val priceOk = (f.minPrice == null || listing.price >= f.minPrice) &&
+                    (f.maxPrice == null || listing.price <= f.maxPrice)
+
+            val roomsOk = when {
+                f.selectedRooms.isEmpty() -> true
+                listing.rooms == null -> false
+                else -> {
+                    val roomCount = listing.rooms
+                    f.selectedRooms.any { selected ->
+                        when {
+                            selected == 0 && roomCount == 0 -> true // Студия
+                            selected == 6 && roomCount >= 5 -> true // 5+
+                            selected == roomCount -> true           // Точное совпадение
+                            else -> false
+                        }
+                    }
+                }
+            }
+
+
+            val cityOk = f.city.isNullOrBlank() || listing.city.equals(f.city, ignoreCase = true)
+            val sourceOk = f.selectedSources.isEmpty() || f.selectedSources.any { sel ->
+                listing.sourceName.equals(sel, ignoreCase = true)
+            }
+
+            Log.d(
+                "RoomFilter",
+                "Объявление: ${listing.title}, rooms = ${listing.rooms}, priceOk = $priceOk, roomsOk = $roomsOk, cityOk = $cityOk, sourceOk = $sourceOk"
+            )
+
+            Log.d("RoomFilter", "All rooms in listings: ${all.map { it.rooms }.distinct()}")
+            Log.d("RoomFilter", "Selected rooms: ${f.selectedRooms}")
+
+            priceOk && roomsOk && cityOk && sourceOk
+        }
+    }
+
 
     private fun loadFavorites() {
         viewModelScope.launch {
-            try {
-                val favs = favoritesRepository.getFavorites(userId ?: return@launch)
-                _favoriteIds.value = favs.map { it.id }.toSet()
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Ошибка загрузки избранного"
+            userId?.let { uid ->
+                _favoriteIds.value = favoritesRepository.getFavorites(uid).map { it.id }.toSet()
             }
         }
     }
 
-    /**
-     * Переключает статус избранного: POST или DELETE на сервере,
-     * затем обновляет локальный state (_favoriteIds).
-     */
     fun toggleFavorite(listing: Listing) {
         viewModelScope.launch {
-            val user = userId ?: return@launch
-
-            try {
-                if (_favoriteIds.value.contains(listing.id)) {
-                    favoritesRepository.removeFavorite(user, listing.id)
-                    _favoriteIds.value = _favoriteIds.value - listing.id
-                } else {
-                    favoritesRepository.addFavorite(user, listing.id)
-                    _favoriteIds.value = _favoriteIds.value + listing.id
+            userId?.let { uid ->
+                try {
+                    if (listing.id in _favoriteIds.value) {
+                        favoritesRepository.removeFavorite(uid, listing.id)
+                        _favoriteIds.value -= listing.id
+                    } else {
+                        favoritesRepository.addFavorite(uid, listing.id)
+                        _favoriteIds.value += listing.id
+                    }
+                } catch (e: HttpException) {
+                    _error.value = e.message()
                 }
-            } catch (e: HttpException) {
-                val msg = e.response()?.errorBody()?.string() ?: e.message()
-                _errorMessage.value = "Ошибка сервера: $msg"
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Неизвестная ошибка"
             }
         }
     }
-
 }

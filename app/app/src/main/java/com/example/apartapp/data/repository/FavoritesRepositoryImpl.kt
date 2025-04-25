@@ -21,7 +21,7 @@ class FavoritesRepositoryImpl @Inject constructor(
                 price = dto.price,
                 address = dto.address,
                 city = dto.city,
-                rooms = null,
+                rooms = dto.rooms,
                 url = dto.url,
                 imageUrls = dto.imageUrls ?: emptyList(),
                 sourceName = dto.sourceName

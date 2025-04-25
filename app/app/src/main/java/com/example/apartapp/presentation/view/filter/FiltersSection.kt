@@ -3,15 +3,17 @@ package com.example.apartapp.presentation.view.filter
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.apartapp.domain.model.ListingsFilter
-import androidx.compose.ui.graphics.Color
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterSection(
     filter: ListingsFilter,
@@ -19,13 +21,41 @@ fun FilterSection(
     modifier: Modifier = Modifier
 ) {
     var cityText by remember { mutableStateOf(filter.city ?: "") }
-    var sourceText by remember { mutableStateOf(filter.source ?: "") }
     var minPriceText by remember { mutableStateOf(filter.minPrice?.toString() ?: "") }
     var maxPriceText by remember { mutableStateOf(filter.maxPrice?.toString() ?: "") }
-    var minRoomsText by remember { mutableStateOf(filter.minRooms?.toString() ?: "") }
-    var maxRoomsText by remember { mutableStateOf(filter.maxRooms?.toString() ?: "") }
+
+    // Маппинг: английское имя -> русское отображение
+    val sourceMap = mapOf(
+        "avito" to "Авито",
+        "domklik" to "ДомКлик",
+        "cian" to "Циан"
+    )
+    // Для обратного поиска
+    val reverseSourceMap = sourceMap.entries.associate { (en, ru) -> ru to en }
+
+    // Все возможные источники (отображаемые на русском)
+    val allSourcesRu = sourceMap.values.toList()
 
     var expanded by remember { mutableStateOf(false) }
+    var roomsDropdownExpanded by remember { mutableStateOf(false) }
+    var sourcesDropdownExpanded by remember { mutableStateOf(false) }
+    var sourceSearch by remember { mutableStateOf("") }
+
+    // Фильтрация источников: ищем и по русскому, и по английскому названию
+    val filteredSources = remember(sourceSearch) {
+        if (sourceSearch.isBlank()) allSourcesRu
+        else allSourcesRu.filter { ru ->
+            val en = reverseSourceMap[ru] ?: ""
+            ru.contains(sourceSearch, ignoreCase = true) ||
+                    en.contains(sourceSearch, ignoreCase = true)
+        }
+    }
+
+    val selectedSourcesRu = remember {
+        mutableStateListOf<String>().apply {
+            addAll(filter.selectedSources.mapNotNull { sourceMap[it.lowercase()] })
+        }
+    }
 
     Column(
         modifier = modifier
@@ -34,52 +64,85 @@ fun FilterSection(
             .padding(16.dp)
     ) {
         Text("Фильтр", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // Верхняя строка: город и источник
-        Row(
+        OutlinedTextField(
+            value = cityText,
+            onValueChange = {
+                cityText = it
+                onFilterChange(filter.copy(city = it.ifBlank { null }))
+            },
+            label = { Text("Город") },
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            singleLine = true
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // Источник — выпадающий список с поиском и чекбоксами
+        ExposedDropdownMenuBox(
+            expanded = sourcesDropdownExpanded,
+            onExpandedChange = { sourcesDropdownExpanded = !sourcesDropdownExpanded }
         ) {
             OutlinedTextField(
-                value = cityText,
-                onValueChange = {
-                    cityText = it
-                    onFilterChange(filter.copy(city = it.ifBlank { null }))
-                },
-                label = { Text("Город") },
                 modifier = Modifier
-                    .weight(1f)
-                    .defaultMinSize(minWidth = 100.dp),
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = sourceText,
-                onValueChange = {
-                    sourceText = it
-                    onFilterChange(filter.copy(source = it.ifBlank { null }))
-                },
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                value = if (selectedSourcesRu.isEmpty())
+                    "" else selectedSourcesRu.joinToString(", "),
+                onValueChange = {},
+                readOnly = true,
                 label = { Text("Источник") },
-                modifier = Modifier
-                    .weight(1f)
-                    .defaultMinSize(minWidth = 100.dp),
-                singleLine = true
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(sourcesDropdownExpanded) },
+                colors = ExposedDropdownMenuDefaults.textFieldColors()
             )
+            ExposedDropdownMenu(
+                expanded = sourcesDropdownExpanded,
+                onDismissRequest = { sourcesDropdownExpanded = false }
+            ) {
+                // Поле поиска внутри выпадающего меню
+                OutlinedTextField(
+                    value = sourceSearch,
+                    onValueChange = { sourceSearch = it },
+                    label = { Text("Поиск источника") },
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth()
+                )
+                filteredSources.forEach { srcRu ->
+                    val srcEn = reverseSourceMap[srcRu] ?: ""
+                    val selected =
+                        filter.selectedSources.any { it.equals(srcEn, ignoreCase = true) }
+                    DropdownMenuItem(
+                        onClick = {
+                            val updated = filter.selectedSources.toMutableSet().apply {
+                                if (selected) remove(srcEn) else add(srcEn)
+                            }
+                            onFilterChange(filter.copy(selectedSources = updated))
+
+                            if (selected) {
+                                selectedSourcesRu.remove(srcRu)
+                            } else {
+                                selectedSourcesRu.add(srcRu)
+                            }
+                        },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = selected, onCheckedChange = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(srcRu)
+                            }
+                        }
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // Раскрывающаяся часть с остальными фильтрами
         AnimatedVisibility(visible = expanded) {
             Column {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = minPriceText,
                         onValueChange = {
@@ -87,9 +150,7 @@ fun FilterSection(
                             onFilterChange(filter.copy(minPrice = it.toBigDecimalOrNull()))
                         },
                         label = { Text("Мин. цена") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .defaultMinSize(minWidth = 100.dp),
+                        modifier = Modifier.weight(1f),
                         singleLine = true
                     )
                     OutlinedTextField(
@@ -99,59 +160,119 @@ fun FilterSection(
                             onFilterChange(filter.copy(maxPrice = it.toBigDecimalOrNull()))
                         },
                         label = { Text("Макс. цена") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .defaultMinSize(minWidth = 100.dp),
+                        modifier = Modifier.weight(1f),
                         singleLine = true
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(12.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                val allRooms = listOf(0, 1, 2, 3, 4, 5)
+
+
+                // Количество комнат
+                ExposedDropdownMenuBox(
+                    expanded = roomsDropdownExpanded,
+                    onExpandedChange = { roomsDropdownExpanded = !roomsDropdownExpanded }
                 ) {
                     OutlinedTextField(
-                        value = minRoomsText,
-                        onValueChange = {
-                            minRoomsText = it
-                            onFilterChange(filter.copy(minRooms = it.toIntOrNull()))
-                        },
-                        label = { Text("Мин. комнаты") },
                         modifier = Modifier
-                            .weight(1f)
-                            .defaultMinSize(minWidth = 100.dp),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = maxRoomsText,
-                        onValueChange = {
-                            maxRoomsText = it
-                            onFilterChange(filter.copy(maxRooms = it.toIntOrNull()))
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        value = if (filter.selectedRooms.isEmpty()) "Все" else {
+                            filter.selectedRooms.sorted().joinToString(", ") {
+                                when (it) {
+                                    0 -> "Студия"
+                                    6 -> "5+"
+                                    else -> "$it"
+                                }
+                            }
                         },
-                        label = { Text("Макс. комнаты") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .defaultMinSize(minWidth = 100.dp),
-                        singleLine = true
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Комнаты") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = if (roomsDropdownExpanded)
+                                    Icons.Default.KeyboardArrowUp
+                                else Icons.Default.KeyboardArrowDown,
+                                contentDescription = null
+                            )
+                        },
+                        colors = ExposedDropdownMenuDefaults.textFieldColors()
                     )
+                    ExposedDropdownMenu(
+                        expanded = roomsDropdownExpanded,
+                        onDismissRequest = { roomsDropdownExpanded = false }
+                    ) {
+                        allRooms.forEach { r ->
+                            val roomName = when (r) {
+                                0 -> "Студия"
+                                else -> "$r"
+                            }
+                            val selected = r in filter.selectedRooms
+                            DropdownMenuItem(
+                                onClick = {
+                                    val updated = filter.selectedRooms.toMutableSet().apply {
+                                        if (selected) remove(r) else add(r)
+                                    }
+                                    onFilterChange(filter.copy(selectedRooms = updated))
+                                },
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = selected, onCheckedChange = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(roomName)
+                                    }
+                                }
+                            )
+                        }
+                        // Добавим опцию "5+"
+                        DropdownMenuItem(
+                            onClick = {
+                                val updated = filter.selectedRooms.toMutableSet().apply {
+                                    if (contains(6)) remove(6) else add(6)
+                                }
+                                onFilterChange(filter.copy(selectedRooms = updated))
+                            },
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(
+                                        checked = filter.selectedRooms.contains(6),
+                                        onCheckedChange = null
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("5+")
+                                }
+                            }
+                        )
+                    }
+
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
 
-        // Кнопка всегда внизу, после всех полей
+        Spacer(Modifier.height(8.dp))
+
         TextButton(
             onClick = { expanded = !expanded },
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text(if (expanded) "Скрыть фильтры" else "Показать ещё")
+            Icon(
+                imageVector = if (expanded)
+                    Icons.Default.KeyboardArrowUp
+                else Icons.Default.KeyboardArrowDown,
+                contentDescription = null
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(if (expanded) "Свернуть" else "Показать ещё")
         }
     }
 }
+
+
+
 
 
 

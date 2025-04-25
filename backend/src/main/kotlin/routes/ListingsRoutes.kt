@@ -34,9 +34,10 @@ fun Route.listingsRoutes() {
                 Listings.sellerUrl,
                 Listings.sourceId,
                 Listings.cityId,
+                Listings.rooms, // <-- добавлено
                 Sources.name,
                 Sources.url,
-                Cities.name  // название города
+                Cities.name
             ).selectAll().map { row ->
                 val listingId = row[Listings.id]
                 val imageUrls = ListingImages.select { ListingImages.listingId eq listingId }
@@ -56,13 +57,15 @@ fun Route.listingsRoutes() {
                     sellerUrl = row[Listings.sellerUrl],
                     sourceId = row[Listings.sourceId],
                     cityId = row[Listings.cityId],
+                    rooms = row[Listings.rooms],  // <-- передаем комнаты
                     sourceName = row[Sources.name],
                     sourceUrl = row[Sources.url],
-                    cityName = row[Cities.name],  // добавлено
+                    cityName = row[Cities.name],
                     imageUrls = imageUrls
                 )
             }
         }
+
         call.respond(listings)
     }
 }

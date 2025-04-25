@@ -2,8 +2,8 @@ package com.example.parser
 
 import com.example.database.db_factory.DatabaseInitializer
 import com.example.database.tables.Cities
-import com.example.database.tables.Listings
 import com.example.database.tables.ListingImages
+import com.example.database.tables.Listings
 import com.example.database.tables.Sources
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -43,7 +43,6 @@ object CSVImporter {
                 val sellerUrl = row["seller_url"]
                 val imageBasePath = row["image_data"]?.trim() ?: ""
 
-                // Обработка источника
                 val sourceUrl = row["url"]?.trim() ?: "default"
                 val sourceName = extractSourceNameFromUrl(sourceUrl) ?: "Неизвестно"
 
@@ -55,7 +54,6 @@ object CSVImporter {
                     }.resultedValues?.firstOrNull()?.get(Sources.id)
                     ?: throw Exception("Не удалось вставить источник: $sourceUrl")
 
-                // Обработка города
                 val cityName = extractCityFromUrl(sourceUrl) ?: "Unknown"
                 val cityId = Cities.select { Cities.name eq cityName }
                     .firstOrNull()?.get(Cities.id)
@@ -64,7 +62,9 @@ object CSVImporter {
                     }.resultedValues?.firstOrNull()?.get(Cities.id)
                     ?: throw Exception("Не удалось вставить город: $cityName")
 
-                // Вставка объявления
+                // Извлекаем количество комнат из заголовка
+                val rooms = extractRoomsFromTitle(title)
+
                 val listingId = Listings.insert {
                     it[Listings.title] = title
                     it[Listings.description] = description
@@ -77,9 +77,9 @@ object CSVImporter {
                     it[Listings.sellerUrl] = sellerUrl
                     it[Listings.sourceId] = sourceId
                     it[Listings.cityId] = cityId
+                    it[Listings.rooms] = rooms  // Записываем комнаты
                 } get Listings.id
 
-                // Автоматическая загрузка всех картинок из папки uploads/img_N
                 val folderIndex = index + 1
                 val imageDir = File("$imageBasePath/img_$folderIndex")
 
@@ -111,9 +111,18 @@ object CSVImporter {
             url.contains("avito") -> "Avito"
             url.contains("cian") -> "Циан"
             url.contains("domclick") -> "Домклик"
-            else -> URI(url).host // Используем host в качестве fallback
+            else -> URI(url).host
         }
     }
+
+
+    private fun extractRoomsFromTitle(title: String): Int? {
+        // Ищет шаблон: число + "к" или "к." (например, "1к", "2к.", "3к")
+        val regex = Regex("""(\d+)\s*к(?:\.| квартира)?""", RegexOption.IGNORE_CASE)
+        val match = regex.find(title)
+        return match?.groups?.get(1)?.value?.toIntOrNull()
+    }
+
 }
 
 fun main() {

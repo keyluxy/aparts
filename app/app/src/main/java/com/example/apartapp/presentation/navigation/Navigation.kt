@@ -166,8 +166,6 @@ fun BottomNavGraph(
     bottomNavController: NavHostController
 )
  {
-//    val bottomNavController = rememberNavController()
-
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 

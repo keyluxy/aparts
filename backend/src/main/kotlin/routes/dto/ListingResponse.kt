@@ -19,5 +19,6 @@ data class ListingResponse(
     val sourceName: String? = null,
     val sourceUrl: String? = null,
     val cityName: String? = null,  // добавлено
-    val imageUrls: List<String> = emptyList()
+    val imageUrls: List<String> = emptyList(),
+    val rooms: Int? = null
 )

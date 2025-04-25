@@ -11,8 +11,7 @@ data class ListingEntity(
     val address: String?,
     val url: String,
     val createdAt: LocalDateTime = LocalDateTime.now(),
-
-    // Новые поля
+    val rooms: Int?,
     val views: Int? = null,
     val publicationDate: LocalDateTime? = null,
     val seller: String? = null,

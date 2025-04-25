@@ -16,6 +16,7 @@ object Listings : Table("listing") {
     val publicationDate = datetime("publication_date").nullable()
     val seller = varchar("seller", 255).nullable()
     val sellerUrl = text("seller_url").nullable()
+    val rooms = integer("rooms").nullable()
 
     // Внешние ключи
     val sourceId = integer("source_id").references(Sources.id)
