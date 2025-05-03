@@ -12,13 +12,13 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.format.DateTimeFormatter
 
-const val baseUrl = "http://10.178.204.18:8080/"
-
+//const val baseUrl = "http://192.168.18.138:8080/"
+//private const val baseUrl = "https://cd20c175-22a4-4f7d-bc62-ef3bb2948d58.tunnel4.com"
+private const val baseUrl = "http://10.0.2.2:8080/"
 
 fun Route.listingsRoutes() {
     get("/listings") {
         val formatter = DateTimeFormatter.ISO_DATE_TIME
-//        val baseUrl = "http://0.0.0.0:8080"
 
         val listings = transaction {
             (Listings innerJoin Sources innerJoin Cities).slice(
@@ -26,15 +26,12 @@ fun Route.listingsRoutes() {
                 Listings.title,
                 Listings.description,
                 Listings.price,
-                Listings.address,
+                Listings.district,
                 Listings.createdAt,
-                Listings.views,
                 Listings.publicationDate,
-                Listings.seller,
-                Listings.sellerUrl,
                 Listings.sourceId,
                 Listings.cityId,
-                Listings.rooms, // <-- добавлено
+                Listings.rooms,
                 Sources.name,
                 Sources.url,
                 Cities.name
@@ -49,15 +46,12 @@ fun Route.listingsRoutes() {
                     title = row[Listings.title],
                     description = row[Listings.description],
                     price = row[Listings.price].toString(),
-                    address = row[Listings.address],
+                    district = row[Listings.district],
                     createdAt = row[Listings.createdAt]?.format(formatter),
-                    views = row[Listings.views],
                     publicationDate = row[Listings.publicationDate]?.format(formatter),
-                    seller = row[Listings.seller],
-                    sellerUrl = row[Listings.sellerUrl],
                     sourceId = row[Listings.sourceId],
                     cityId = row[Listings.cityId],
-                    rooms = row[Listings.rooms],  // <-- передаем комнаты
+                    rooms = row[Listings.rooms],
                     sourceName = row[Sources.name],
                     sourceUrl = row[Sources.url],
                     cityName = row[Cities.name],
@@ -65,7 +59,6 @@ fun Route.listingsRoutes() {
                 )
             }
         }
-
         call.respond(listings)
     }
 }

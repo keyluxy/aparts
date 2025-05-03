@@ -18,7 +18,7 @@ fun ListingsList(
     scrollState: LazyListState,
     onListingClick: (Int) -> Unit
 ) {
-    androidx.compose.foundation.lazy.LazyColumn(
+    LazyColumn(
         state = scrollState,
         modifier = Modifier.fillMaxSize()
     ) {

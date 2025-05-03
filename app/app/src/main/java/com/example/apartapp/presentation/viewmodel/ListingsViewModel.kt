@@ -82,9 +82,9 @@ class ListingsViewModel @Inject constructor(
                     val roomCount = listing.rooms
                     f.selectedRooms.any { selected ->
                         when {
-                            selected == 0 && roomCount == 0 -> true // Студия
-                            selected == 6 && roomCount >= 5 -> true // 5+
-                            selected == roomCount -> true           // Точное совпадение
+                            selected == 0 && roomCount == 0 -> true
+                            selected == 6 && roomCount >= 5 -> true
+                            selected == roomCount -> true
                             else -> false
                         }
                     }
@@ -96,14 +96,6 @@ class ListingsViewModel @Inject constructor(
             val sourceOk = f.selectedSources.isEmpty() || f.selectedSources.any { sel ->
                 listing.sourceName.equals(sel, ignoreCase = true)
             }
-
-            Log.d(
-                "RoomFilter",
-                "Объявление: ${listing.title}, rooms = ${listing.rooms}, priceOk = $priceOk, roomsOk = $roomsOk, cityOk = $cityOk, sourceOk = $sourceOk"
-            )
-
-            Log.d("RoomFilter", "All rooms in listings: ${all.map { it.rooms }.distinct()}")
-            Log.d("RoomFilter", "Selected rooms: ${f.selectedRooms}")
 
             priceOk && roomsOk && cityOk && sourceOk
         }

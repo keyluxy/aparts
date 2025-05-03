@@ -19,7 +19,7 @@ class FavoritesRepositoryImpl @Inject constructor(
                 title = dto.title,
                 description = dto.description,
                 price = dto.price,
-                address = dto.address,
+                district = dto.district,
                 city = dto.city,
                 rooms = dto.rooms,
                 url = dto.url,

@@ -28,17 +28,15 @@ fun buildListingResponse(listing: ResultRow, baseUrl: String): ListingResponse {
         title = listing[Listings.title],
         description = listing[Listings.description],
         price = listing[Listings.price].toString(),
-        address = listing[Listings.address],
+        district = listing[Listings.district],
         createdAt = listing[Listings.createdAt]?.format(formatter),
-        views = listing[Listings.views],
         publicationDate = listing[Listings.publicationDate]?.format(formatter),
-        seller = listing[Listings.seller],
-        sellerUrl = listing[Listings.sellerUrl],
         sourceId = listing[Listings.sourceId],
         cityId = listing[Listings.cityId],
         sourceName = source?.get(Sources.name),
         sourceUrl = source?.get(Sources.url),
         cityName = city?.get(Cities.name),
-        imageUrls = imageUrls
+        imageUrls = imageUrls,
+        rooms = listing[Listings.rooms]
     )
 }

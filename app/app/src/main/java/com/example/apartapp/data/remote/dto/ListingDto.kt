@@ -8,12 +8,13 @@ data class ListingDto(
     val title: String,
     val description: String? = null,
     val price: BigDecimal,
-    val address: String? = null,
+    val district: String? = null,
     @SerializedName("sourceUrl")
-    val url: String? = null,               // теперь будет парситься из "sourceUrl"
+    val url: String? = null,
     val imageUrls: List<String>? = null,
     @SerializedName("cityName")
-    val city: String? = null,              // теперь будет парситься из "cityName"
+    val city: String? = null,
     val rooms: Int? = null,
     val sourceName: String? = null
 )
+

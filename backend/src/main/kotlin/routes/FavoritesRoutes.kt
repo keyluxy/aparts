@@ -17,8 +17,10 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.format.DateTimeFormatter
 
-//const val baseUrl = "http://0.0.0.0:8080"
-const val baseUrl = "http://10.178.204.18:8080/"
+//const val baseUrl = "http://192.168.18.138:8080"
+//private const val baseUrl = "https://cd20c175-22a4-4f7d-bc62-ef3bb2948d58.tunnel4.com"
+
+private const val baseUrl = "http://10.0.2.2:8080/"
 
 fun Route.favoritesRoutes() {
 
@@ -32,9 +34,6 @@ fun Route.favoritesRoutes() {
             respondWithError(call, HttpStatusCode.BadRequest, "Invalid userId")
             return@get
         }
-
-
-        val formatter = java.time.format.DateTimeFormatter.ISO_DATE_TIME
 
         val favorites = withContext(Dispatchers.IO) {
             transaction {

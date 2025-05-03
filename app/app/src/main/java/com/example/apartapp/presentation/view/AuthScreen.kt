@@ -1,37 +1,25 @@
 package com.example.apartapp.presentation.view
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.apartapp.presentation.viewmodel.AuthViewModel
-import androidx.compose.ui.Modifier
 import com.example.apartapp.presentation.viewmodel.state.AuthState
-
 
 @Composable
 fun AuthScreen(
     authViewModel: AuthViewModel = hiltViewModel(),
-    onAuthSuccess: (userId: Int) -> Unit // Добавляем userId
+    onAuthSuccess: (userId: Int) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
@@ -42,19 +30,15 @@ fun AuthScreen(
 
     val authState by authViewModel.authState.collectAsState()
 
-    /*
-       Добавляем блок LaunchedEffect для обработки userId
-       после успешной регистрации или логина
-    */
     LaunchedEffect(authState) {
         when (authState) {
-            is AuthState.Registered -> {
-                onAuthSuccess((authState as AuthState.Registered).userId)
-            }
+            is AuthState.Registered -> onAuthSuccess((authState as AuthState.Registered).userId)
             is AuthState.LoggedIn -> {
-                val userId = authViewModel.getUserIdFromToken((authState as AuthState.LoggedIn).token)
+                val userId =
+                    authViewModel.getUserIdFromToken((authState as AuthState.LoggedIn).token)
                 onAuthSuccess(userId)
             }
+
             else -> {}
         }
     }
@@ -82,12 +66,12 @@ fun AuthScreen(
                     password,
                     firstName,
                     lastName,
-                    middleName.ifBlank { null })
+                    middleName.ifBlank { null }
+                )
             }
         }
     )
 }
-
 
 @Composable
 fun RegScreen(
@@ -109,78 +93,110 @@ fun RegScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(8.dp, RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = if (isLoginMode) "Login" else "Register",
-                style = MaterialTheme.typography.bodyLarge
+                text = if (isLoginMode) "Welcome Back" else "Create Account",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = { Text(text = "Email") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = password,
-                onValueChange = onPasswordChange,
-                label = { Text(text = "Password") },
+                label = { Text("Email") },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = { Text("Password") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation()
+            )
+
             if (!isLoginMode) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
                 OutlinedTextField(
                     value = firstName,
                     onValueChange = onFirstNameChange,
-                    label = { Text(text = "First Name") },
+                    label = { Text("First Name") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 OutlinedTextField(
                     value = lastName,
                     onValueChange = onLastNameChange,
-                    label = { Text(text = "Last Name") },
+                    label = { Text("Last Name") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 OutlinedTextField(
                     value = middleName,
                     onValueChange = onMiddleNameChange,
-                    label = { Text(text = "Middle Name") },
+                    label = { Text("Middle Name (optional)") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = onAuthAction,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(text = if (isLoginMode) "Sign In" else "Sign Up")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            TextButton(onClick = onToggleMode) {
+                Text(
+                    text = if (isLoginMode)
+                        "Don't have an account? Sign Up"
+                    else
+                        "Already have an account? Sign In",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = onAuthAction,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = if (isLoginMode) "Login" else "Register")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(onClick = onToggleMode) {
-                Text(text = if (isLoginMode) "Don't have an account? Register" else "Already have an account? Login")
-            }
-
             when (authState) {
-                is AuthState.Loading -> CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(16.dp))
+                is AuthState.Loading -> CircularProgressIndicator()
                 is AuthState.Error -> Text(
-                    text = "Error: ${authState.message}",
-                    color = MaterialTheme.colorScheme.error
+                    text = authState.message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
                 else -> {}
@@ -188,4 +204,3 @@ fun RegScreen(
         }
     }
 }
-

@@ -3,6 +3,7 @@ package com.example.apartapp.presentation.view.filter
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.apartapp.domain.model.ListingsFilter
 
@@ -24,16 +26,12 @@ fun FilterSection(
     var minPriceText by remember { mutableStateOf(filter.minPrice?.toString() ?: "") }
     var maxPriceText by remember { mutableStateOf(filter.maxPrice?.toString() ?: "") }
 
-    // Маппинг: английское имя -> русское отображение
     val sourceMap = mapOf(
         "avito" to "Авито",
         "domklik" to "ДомКлик",
         "cian" to "Циан"
     )
-    // Для обратного поиска
     val reverseSourceMap = sourceMap.entries.associate { (en, ru) -> ru to en }
-
-    // Все возможные источники (отображаемые на русском)
     val allSourcesRu = sourceMap.values.toList()
 
     var expanded by remember { mutableStateOf(false) }
@@ -41,7 +39,6 @@ fun FilterSection(
     var sourcesDropdownExpanded by remember { mutableStateOf(false) }
     var sourceSearch by remember { mutableStateOf("") }
 
-    // Фильтрация источников: ищем и по русскому, и по английскому названию
     val filteredSources = remember(sourceSearch) {
         if (sourceSearch.isBlank()) allSourcesRu
         else allSourcesRu.filter { ru ->
@@ -60,8 +57,8 @@ fun FilterSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
+            .clip(RoundedCornerShape(16.dp)) // Добавлен clip для закругления углов
     ) {
         Text("Фильтр", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
@@ -79,7 +76,6 @@ fun FilterSection(
 
         Spacer(Modifier.height(8.dp))
 
-        // Источник — выпадающий список с поиском и чекбоксами
         ExposedDropdownMenuBox(
             expanded = sourcesDropdownExpanded,
             onExpandedChange = { sourcesDropdownExpanded = !sourcesDropdownExpanded }
@@ -100,7 +96,6 @@ fun FilterSection(
                 expanded = sourcesDropdownExpanded,
                 onDismissRequest = { sourcesDropdownExpanded = false }
             ) {
-                // Поле поиска внутри выпадающего меню
                 OutlinedTextField(
                     value = sourceSearch,
                     onValueChange = { sourceSearch = it },
@@ -169,8 +164,6 @@ fun FilterSection(
 
                 val allRooms = listOf(0, 1, 2, 3, 4, 5)
 
-
-                // Количество комнат
                 ExposedDropdownMenuBox(
                     expanded = roomsDropdownExpanded,
                     onExpandedChange = { roomsDropdownExpanded = !roomsDropdownExpanded }
@@ -227,7 +220,6 @@ fun FilterSection(
                                 }
                             )
                         }
-                        // Добавим опцию "5+"
                         DropdownMenuItem(
                             onClick = {
                                 val updated = filter.selectedRooms.toMutableSet().apply {
@@ -257,7 +249,9 @@ fun FilterSection(
 
         TextButton(
             onClick = { expanded = !expanded },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(8.dp)
         ) {
             Icon(
                 imageVector = if (expanded)
@@ -270,9 +264,3 @@ fun FilterSection(
         }
     }
 }
-
-
-
-
-
-

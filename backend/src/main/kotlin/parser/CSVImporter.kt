@@ -29,9 +29,8 @@ object CSVImporter {
                 val title = row["title"] ?: return@forEachIndexed
                 val description = row["description"]
                 val price = row["price"]?.toBigDecimalOrNull() ?: BigDecimal.ZERO
-                val address = row["address"]
+                val district = row["district"]
                 val createdAt = LocalDateTime.now()
-                val views = row["views"]
                 val publicationDate = row["publication_date"]?.let {
                     try {
                         LocalDateTime.parse(it, dateTimeFormatter)
@@ -39,8 +38,7 @@ object CSVImporter {
                         null
                     }
                 }
-                val seller = row["seller"]
-                val sellerUrl = row["seller_url"]
+
                 val imageBasePath = row["image_data"]?.trim() ?: ""
 
                 val sourceUrl = row["url"]?.trim() ?: "default"
@@ -69,12 +67,10 @@ object CSVImporter {
                     it[Listings.title] = title
                     it[Listings.description] = description
                     it[Listings.price] = price
-                    it[Listings.address] = address
+                    it[Listings.district] = district
                     it[Listings.createdAt] = createdAt
-                    it[Listings.views] = views
                     if (publicationDate != null) it[Listings.publicationDate] = publicationDate
-                    it[Listings.seller] = seller
-                    it[Listings.sellerUrl] = sellerUrl
+
                     it[Listings.sourceId] = sourceId
                     it[Listings.cityId] = cityId
                     it[Listings.rooms] = rooms  // Записываем комнаты
@@ -102,9 +98,25 @@ object CSVImporter {
     }
 
     private fun extractCityFromUrl(url: String): String? {
-        val regex = Regex("https?://(?:www\\.)?avito\\.ru/([^/]+)/")
-        return regex.find(url)?.groups?.get(1)?.value
+        // Сначала пытаемся извлечь город из поддомена (например, "kazan" в "kazan.cian.ru")
+        val regexSubdomain = Regex("""https?://([a-zA-Z0-9\-]+)\.(?:cian\.ru|avito\.ru|domclick\.ru)""")
+        val matchSubdomain = regexSubdomain.find(url)
+        if (matchSubdomain != null) {
+            return matchSubdomain.groups[1]?.value
+        }
+
+        // Если не подходит под поддомен, пытаемся извлечь город из пути (например, avito.ru/moscow/...)
+        val regexPath = Regex("""https?://(?:www\.)?avito\.ru/([^/]+)/""")
+        val matchPath = regexPath.find(url)
+        if (matchPath != null) {
+            return matchPath.groups[1]?.value
+        }
+
+        // Если ничего не подошло, возвращаем null
+        return null
     }
+
+
 
     private fun extractSourceNameFromUrl(url: String): String? {
         return when {

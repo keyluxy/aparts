@@ -9,13 +9,9 @@ object Listings : Table("listing") {
     val title = text("title")
     val description = text("description").nullable()
     val price = decimal("price", 10, 2)
-    val address = text("address").nullable()
-    // Поле url удалено
+    val district = text("district").nullable() // <-- новое поле "район" вместо address
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime).nullable()
-    val views = text("views").nullable()
     val publicationDate = datetime("publication_date").nullable()
-    val seller = varchar("seller", 255).nullable()
-    val sellerUrl = text("seller_url").nullable()
     val rooms = integer("rooms").nullable()
 
     // Внешние ключи
@@ -24,3 +20,4 @@ object Listings : Table("listing") {
 
     override val primaryKey = PrimaryKey(id)
 }
+

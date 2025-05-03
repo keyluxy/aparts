@@ -9,6 +9,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -26,114 +27,182 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.apartapp.domain.model.Listing
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListingDetailScreen(
     listing: Listing,
-    onBackClick: () -> Unit // Добавляем параметр для кнопки назад
+    onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    val coroutineScope = rememberCoroutineScope()
-
     val pagerState = rememberPagerState(pageCount = { listing.imageUrls.size })
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxSize()
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
+                .verticalScroll(scrollState)
+                .fillMaxSize()
         ) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
-                AsyncImage(
-                    model = listing.imageUrls[page],
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            // Кнопка назад поверх изображений, слева сверху
-            IconButton(
-                onClick = onBackClick,
+            Box(
                 modifier = Modifier
-                    .padding(12.dp)
-                    .align(Alignment.TopStart)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.5f),
-                        shape = MaterialTheme.shapes.small
-                    )
-                    .size(36.dp)
+                    .fillMaxWidth()
+                    .height(320.dp)
+                    .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Назад",
-                    tint = Color.White
-                )
-            }
-        }
+                if (listing.imageUrls.isNotEmpty()) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        AsyncImage(
+                            model = listing.imageUrls[page],
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Нет фото",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            repeat(listing.imageUrls.size) { index ->
-                val color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.primary else Color.LightGray
-                Box(
+                // Кнопка "Назад"
+                IconButton(
+                    onClick = onBackClick,
                     modifier = Modifier
-                        .padding(4.dp)
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(color)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(
-                text = listing.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "\$${listing.price}",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Город: ${listing.city ?: "не указан"}")
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Количество комнат: ${listing.rooms ?: "не указано"}")
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Описание:")
-            Text(text = listing.description ?: "Описание отсутствует")
-            Spacer(modifier = Modifier.height(8.dp))
-            if (!listing.sourceName.isNullOrEmpty()) {
-                Text(text = "Источник: ${listing.sourceName}")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            if (!listing.url.isNullOrEmpty()) {
-                Button(onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(listing.url))
-                    context.startActivity(intent)
-                }) {
-                    Text("Перейти к объявлению")
+                        .padding(16.dp)
+                        .align(Alignment.TopStart)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = Color.White
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+
+            // Индикатор страниц
+            if (listing.imageUrls.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp, bottom = 6.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    repeat(listing.imageUrls.size) { index ->
+                        val color = if (pagerState.currentPage == index)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                    }
+                }
+            }
+
+            // Контент карточки
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(20.dp)
+            ) {
+                Text(
+                    text = listing.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "${listing.price} руб.",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Город: ",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = listing.city ?: "не указан",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Комнат: ",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${listing.rooms ?: "не указано"}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Описание",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = listing.description ?: "Описание отсутствует",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                if (!listing.sourceName.isNullOrEmpty()) {
+                    Text(
+                        text = "Источник: ${listing.sourceName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                if (!listing.url.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(listing.url))
+                            context.startActivity(intent)
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Перейти к объявлению")
+                    }
+                }
+            }
         }
     }
 }
+

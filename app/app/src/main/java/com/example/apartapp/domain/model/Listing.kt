@@ -7,10 +7,10 @@ data class Listing(
     val title: String,
     val description: String?,
     val price: BigDecimal,
-    val address: String?,
+    val district: String?,
     val city: String?,
     val rooms: Int?,
-    val url: String? = null,          // ссылка на источник
+    val url: String? = null,
     val imageUrls: List<String> = emptyList(),
-    val sourceName: String? = null    // название источника
+    val sourceName: String? = null
 )

@@ -9,12 +9,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -23,9 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.apartapp.domain.model.Listing
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 
 @Composable
 fun ListingCard(
@@ -39,35 +40,39 @@ fun ListingCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .animateContentSize()
+            .shadow(4.dp, RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { onListingClick() },
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
             ) {
                 if (listing.imageUrls.isNotEmpty()) {
                     AsyncImage(
                         model = listing.imageUrls.first(),
                         contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(8.dp)),
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.LightGray),
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = "Изображение отсутствует")
+                        Text(
+                            text = "Изображение отсутствует",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
@@ -78,7 +83,10 @@ fun ListingCard(
                         .padding(8.dp)
                 ) {
                     Crossfade(targetState = isFavorite) { fav ->
-                        val tint by animateColorAsState(if (fav) Color.Red else Color.White)
+                        val tint by animateColorAsState(
+                            if (fav) Color.Red
+                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
                         Icon(
                             imageVector = if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = null,
@@ -88,27 +96,35 @@ fun ListingCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = listing.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(4.dp))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = "\$${listing.price}",
-                style = MaterialTheme.typography.titleLarge,
+                text = "${listing.price} руб.",
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(4.dp))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = listing.city ?: "Город не указан",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             )
+
             if (!listing.sourceName.isNullOrEmpty() && !listing.url.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Text(
                     text = "Источник: ${listing.sourceName}",
                     style = MaterialTheme.typography.bodySmall,

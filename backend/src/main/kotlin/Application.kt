@@ -14,7 +14,6 @@ fun main() {
 fun Application.module() {
     configureSerialization()
     DatabaseInitializer.init()
-
     configureSecurity()
     configureRouting()
 }
