@@ -1,13 +1,11 @@
 package com.example.apartapp.data.remote.dto
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Suppress("PLUGIN_IS_NOT_ENABLED")
-@Serializable
-class RegisterRequestDto (
+data class RegisterRequestDto(
     val email: String,
     val password: String,
     val firstName: String,
     val lastName: String,
     val middleName: String? = null
-)
+) 

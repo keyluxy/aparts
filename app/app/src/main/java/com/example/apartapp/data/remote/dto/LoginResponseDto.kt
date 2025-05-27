@@ -1,9 +1,7 @@
 package com.example.apartapp.data.remote.dto
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Suppress("PLUGIN_IS_NOT_ENABLED")
-@Serializable
-class LoginResponseDto (
+data class LoginResponseDto(
     val token: String
-)
+) 

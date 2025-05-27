@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.apartapp.domain.model.Listing
 import com.example.apartapp.domain.model.ListingsFilter
 import com.example.apartapp.domain.repository.FavoritesRepository
+import com.example.apartapp.domain.repository.ListingsRepository
 import com.example.apartapp.domain.usecases.GetListingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ListingsViewModel @Inject constructor(
     private val getListingsUseCase: GetListingsUseCase,
-    private val favoritesRepository: FavoritesRepository
+    private val favoritesRepository: FavoritesRepository,
+    private val listingsRepository: ListingsRepository
 ) : ViewModel() {
 
     private val _allListings = MutableStateFlow<List<Listing>>(emptyList())
@@ -40,6 +42,11 @@ class ListingsViewModel @Inject constructor(
 
     init {
         fetchListings()
+        viewModelScope.launch {
+            listingsRepository.refreshTrigger.collect {
+                fetchListings()
+            }
+        }
     }
 
     fun setUserId(id: Int) {
@@ -52,20 +59,29 @@ class ListingsViewModel @Inject constructor(
         applyFilters()
     }
 
-    private fun fetchListings() {
+    fun fetchListings() {
         viewModelScope.launch {
             _isLoading.value = true
-            getListingsUseCase().fold(
-                onSuccess = {
-                    _allListings.value = it
-                    applyFilters()
-                },
-                onFailure = { t -> _error.value = t.message }
-            )
-            _isLoading.value = false
+            _error.value = null
+            try {
+                getListingsUseCase().fold(
+                    onSuccess = {
+                        _allListings.value = it
+                        applyFilters()
+                    },
+                    onFailure = { t -> 
+                        Log.e("ListingsViewModel", "Error fetching listings", t)
+                        _error.value = t.message 
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("ListingsViewModel", "Error in fetchListings", e)
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
-
 
     private fun applyFilters() {
         val all = _allListings.value

@@ -1,15 +1,21 @@
 package com.example.apartapp.data.di
 
+import android.content.Context
 import com.example.apartapp.data.remote.AuthApiService
 import com.example.apartapp.data.remote.FavoritesApiService
 import com.example.apartapp.data.remote.ListingsApiService
 import com.example.apartapp.data.remote.ParsingApiService
+import com.example.apartapp.data.remote.AdminApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
@@ -19,10 +25,12 @@ import javax.inject.Singleton
 class NetworkModule {
 
     companion object {
-//        private const val BASE_URL = "http://192.168.18.138:8080/"
-private const val BASE_URL = "http://10.0.2.2:8080/"
-//        private const val BASE_URL = "https://cd20c175-22a4-4f7d-bc62-ef3bb2948d58.tunnel4.com"
-
+        // Для эмулятора
+        // private const val BASE_URL = "http://10.0.2.2:8080/"
+        // Для реального устройства в локальной сети
+        private const val BASE_URL = "http://192.168.31.138:8080/"
+        // Для внешнего доступа
+        // private const val BASE_URL = "https://cd20c175-22a4-4f7d-bc62-ef3bb2948d58.tunnel4.com"
     }
 
     @Provides
@@ -31,10 +39,43 @@ private const val BASE_URL = "http://10.0.2.2:8080/"
 
     @Provides
     @Singleton
-    fun provideRetrofit(json: Json): Retrofit {
+    fun provideAuthInterceptor(@ApplicationContext context: Context): Interceptor {
+        return object : Interceptor {
+            override fun intercept(chain: Interceptor.Chain): Response {
+                val token = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+                    .getString("auth_token", null)
+                
+                val request = chain.request().newBuilder().apply {
+                    token?.let { addHeader("Authorization", "Bearer $it") }
+                }.build()
+                
+                return chain.proceed(request)
+            }
+        }
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authInterceptor: Interceptor): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                android.util.Log.d("NetworkModule", "Request: ${request.method} ${request.url}")
+                val response = chain.proceed(request)
+                android.util.Log.d("NetworkModule", "Response: ${response.code} ${response.message}")
+                response
+            }
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         val contentType = "application/json".toMediaType()
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
@@ -59,6 +100,9 @@ private const val BASE_URL = "http://10.0.2.2:8080/"
     fun provideFavoritesApiService(retrofit: Retrofit): FavoritesApiService =
         retrofit.create(FavoritesApiService::class.java)
 
-
+    @Provides
+    @Singleton
+    fun provideAdminApiService(retrofit: Retrofit): AdminApiService =
+        retrofit.create(AdminApiService::class.java)
 }
 
