@@ -1,34 +1,24 @@
 package com.example.apartapp.data.remote.dto
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
+import com.google.gson.annotations.SerializedName
 
-@Serializable
 data class AdminListingRequest(
+    @SerializedName("title")
     val title: String,
-    val description: String?,
+    @SerializedName("description")
+    val description: String? = null,
+    @SerializedName("price")
     val price: String,
-    val district: String?,
-    val rooms: Int?,
+    @SerializedName("district")
+    val district: String? = null,
+    @SerializedName("rooms")
+    val rooms: Int? = null,
+    @SerializedName("cityName")
     val cityName: String,
+    @SerializedName("sourceName")
     val sourceName: String,
-    val publicationDate: String?,
-    val images: List<String>? = null // Base64 строки
-)
-
-object ByteArraySerializer : KSerializer<ByteArray> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ByteArray", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: ByteArray) {
-        encoder.encodeString(value.joinToString(",") { it.toString() })
-    }
-
-    override fun deserialize(decoder: Decoder): ByteArray {
-        return decoder.decodeString().split(",").map { it.toByte() }.toByteArray()
-    }
-} 
+    @SerializedName("publicationDate")
+    val publicationDate: String? = null,
+    @SerializedName("images")
+    val images: List<String>? = null
+) 

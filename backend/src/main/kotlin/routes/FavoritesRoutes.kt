@@ -1,12 +1,17 @@
 // В файле routes/FavoritesRoutes.kt
 
+import com.example.database.tables.Cities
 import com.example.database.tables.Favorites
+import com.example.database.tables.ListingImages
 import com.example.database.tables.Listings
+import com.example.database.tables.Sources
 import com.example.database.tables.Users
 import com.example.routes.dto.ListingResponse
 import com.example.routes.mappers.buildListingResponse
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -23,104 +28,133 @@ import java.time.format.DateTimeFormatter
 private const val baseUrl = "http://10.0.2.2:8080/"
 
 fun Route.favoritesRoutes() {
+    route("/favorites") {
+        authenticate("auth-jwt") {
+            get("/{userId}") {
+                val userId = call.parameters["userId"]?.toIntOrNull()
+                if (userId == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid user ID")
+                    return@get
+                }
 
-    suspend fun respondWithError(call: ApplicationCall, status: HttpStatusCode, message: String) {
-        call.respond(status, message)
-    }
+                // Проверяем существование пользователя
+                val userExists = transaction {
+                    Users.select { Users.id eq userId }.count() > 0
+                }
+                if (!userExists) {
+                    call.respond(HttpStatusCode.NotFound, "User not found")
+                    return@get
+                }
 
-    get("/favorites/{userId}") {
-        val userId = call.parameters["userId"]?.toIntOrNull()
-        if (userId == null) {
-            respondWithError(call, HttpStatusCode.BadRequest, "Invalid userId")
-            return@get
-        }
+                val formatter = DateTimeFormatter.ISO_DATE_TIME
 
-        val favorites = withContext(Dispatchers.IO) {
-            transaction {
-                (Favorites innerJoin Listings)
-                    .select { Favorites.userId eq userId }
-                    .map { favRow ->
-                        val listing = Listings.select { Listings.id eq favRow[Favorites.listingId] }.single()
-                        buildListingResponse(listing, baseUrl)
-                    }
-
+                val favorites = transaction {
+                    (Favorites innerJoin Listings innerJoin Sources innerJoin Cities)
+                        .slice(
+                            Listings.id,
+                            Listings.title,
+                            Listings.description,
+                            Listings.price,
+                            Listings.district,
+                            Listings.createdAt,
+                            Listings.publicationDate,
+                            Listings.sourceId,
+                            Listings.cityId,
+                            Listings.rooms,
+                            Sources.name,
+                            Sources.url,
+                            Cities.name
+                        )
+                        .select { Favorites.userId eq userId }
+                        .map { row ->
+                            val listingId = row[Listings.id]
+                            val imageUrls = ListingImages.select { ListingImages.listingId eq listingId }
+                                .map { imgRow ->
+                                    "$baseUrl/listings/$listingId/image?imageId=${imgRow[ListingImages.id]}"
+                                }
+                            ListingResponse(
+                                id = listingId,
+                                title = row[Listings.title],
+                                description = row[Listings.description],
+                                price = row[Listings.price].toString(),
+                                district = row[Listings.district],
+                                createdAt = row[Listings.createdAt]?.format(formatter),
+                                publicationDate = row[Listings.publicationDate]?.format(formatter),
+                                sourceId = row[Listings.sourceId],
+                                cityId = row[Listings.cityId],
+                                rooms = row[Listings.rooms],
+                                sourceName = row[Sources.name],
+                                sourceUrl = row[Sources.url],
+                                cityName = row[Cities.name],
+                                imageUrls = imageUrls
+                            )
+                        }
+                }
+                call.respond(favorites)
             }
-        }
-        call.respond(favorites)
-    }
 
-    post("/favorites/{userId}/{listingId}") {
-        val userId    = call.parameters["userId"]?.toIntOrNull()
-        val listingId = call.parameters["listingId"]?.toIntOrNull()
+            post("/{userId}/{listingId}") {
+                val userId = call.parameters["userId"]?.toIntOrNull()
+                val listingId = call.parameters["listingId"]?.toIntOrNull()
 
-        if (userId == null || listingId == null) {
-            respondWithError(call, HttpStatusCode.BadRequest, "userId or listingId is invalid")
-            return@post
-        }
+                if (userId == null || listingId == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid user ID or listing ID")
+                    return@post
+                }
 
-        try {
-            // Валидация наличия пользователя и объявления вне транзакции
-            val userExists    = transaction { Users.select { Users.id eq userId }.count() > 0 }
-            val listingExists = transaction { Listings.select { Listings.id eq listingId }.count() > 0 }
-
-            if (!userExists) {
-                respondWithError(call, HttpStatusCode.NotFound, "User $userId not found")
-                return@post
-            }
-            if (!listingExists) {
-                respondWithError(call, HttpStatusCode.NotFound, "Listing $listingId not found")
-                return@post
-            }
-
-            // Ставим insert в собственную транзакцию и возвращаем 201 Created
-            val inserted = transaction {
-                // проверим, есть ли уже
-                val exists = Favorites.select {
-                    (Favorites.userId eq userId) and (Favorites.listingId eq listingId)
-                }.any()
+                // Проверяем существование пользователя и объявления
+                val exists = transaction {
+                    val userExists = Users.select { Users.id eq userId }.count() > 0
+                    val listingExists = Listings.select { Listings.id eq listingId }.count() > 0
+                    userExists && listingExists
+                }
 
                 if (!exists) {
+                    call.respond(HttpStatusCode.NotFound, "User or listing not found")
+                    return@post
+                }
+
+                // Проверяем, не добавлено ли уже объявление в избранное
+                val alreadyFavorite = transaction {
+                    Favorites.select { (Favorites.userId eq userId) and (Favorites.listingId eq listingId) }.count() > 0
+                }
+
+                if (alreadyFavorite) {
+                    call.respond(HttpStatusCode.Conflict, "Listing already in favorites")
+                    return@post
+                }
+
+                transaction {
                     Favorites.insert {
-                        it[Favorites.userId]    = userId
+                        it[Favorites.userId] = userId
                         it[Favorites.listingId] = listingId
                     }
-                    true
-                } else false
+                }
+
+                call.respond(HttpStatusCode.Created, "Added to favorites")
             }
 
-            call.respond(
-                status = if (inserted) HttpStatusCode.Created else HttpStatusCode.OK,
-                message = mapOf("added" to inserted)
-            )
-        } catch (e: Exception) {
-            application.log.error("Failed to add favorite for user=$userId, listing=$listingId", e)
-            respondWithError(call, HttpStatusCode.InternalServerError, "Internal error: ${e.localizedMessage}")
-        }
-    }
+            delete("/{userId}/{listingId}") {
+                val userId = call.parameters["userId"]?.toIntOrNull()
+                val listingId = call.parameters["listingId"]?.toIntOrNull()
 
-    delete("/favorites/{userId}/{listingId}") {
-        val userId = call.parameters["userId"]?.toIntOrNull()
-        val listingId = call.parameters["listingId"]?.toIntOrNull()
+                if (userId == null || listingId == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid user ID or listing ID")
+                    return@delete
+                }
 
-        if (userId == null || listingId == null) {
-            respondWithError(call, HttpStatusCode.BadRequest, "Invalid userId or listingId")
-            return@delete
-        }
+                val deleted = transaction {
+                    Favorites.deleteWhere { (Favorites.userId eq userId) and (Favorites.listingId eq listingId) }
+                }
 
-        try {
-            withContext(Dispatchers.IO) {
-                transaction {
-                    Favorites.deleteWhere {
-                        (Favorites.userId eq userId) and (Favorites.listingId eq listingId)
-                    }
+                if (deleted > 0) {
+                    call.respond(HttpStatusCode.OK, "Removed from favorites")
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "Favorite not found")
                 }
             }
-            call.respond(HttpStatusCode.OK)
-        } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
         }
     }
-
 }
 
 

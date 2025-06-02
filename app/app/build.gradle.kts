@@ -1,9 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("kotlin-kapt")
-    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.ksp)
+    kotlin("kapt")
 }
 
 android {
@@ -91,18 +92,14 @@ dependencies {
 
     // retrofit
     implementation(libs.retrofit)
-    implementation(libs.retrofit2.kotlinx.serialization.converter)
-    implementation (libs.converter.gson)
-
+    implementation(libs.converter.gson)
+    implementation(libs.jetbrains.kotlinx.serialization.json)
 
     // coroutines
     implementation(libs.kotlinx.coroutines.android)
 
-    // serializarion
-    implementation(libs.jetbrains.kotlinx.serialization.json)
-
-    //viewmodel
-    implementation (libs.androidx.lifecycle.viewmodel.ktx)
+    // viewmodel
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.hilt.navigation.fragment)
     implementation(libs.androidx.hilt.navigation.compose)
 
@@ -120,6 +117,7 @@ dependencies {
     implementation(libs.coil.compose.v210)
 
     implementation(libs.jjwt.api)
+
 
 }
 

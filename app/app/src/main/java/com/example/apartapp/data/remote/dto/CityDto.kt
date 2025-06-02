@@ -1,9 +1,10 @@
 package com.example.apartapp.data.remote.dto
 
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Serializable
 data class CityDto(
+    @SerializedName("id")
     val id: Int,
+    @SerializedName("name")
     val name: String
 ) 

@@ -7,6 +7,7 @@ import com.example.routes.dto.LoginResponse
 import com.example.routes.dto.ErrorResponse
 import com.example.service.AuthService
 import io.ktor.http.*
+import io.ktor.server.application.call
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -27,7 +28,7 @@ fun Route.authRoutes(authService: AuthService) {
                 return@post
             }
 
-            val userId = authService.register(
+            val (userId, token) = authService.register(
                 registerRequest.email,
                 registerRequest.password,
                 registerRequest.firstName,
@@ -35,7 +36,7 @@ fun Route.authRoutes(authService: AuthService) {
                 registerRequest.middleName
             )
             logger.info("Registration successful for user id: $userId")
-            call.respond(HttpStatusCode.Created, RegisterResponse(status = "registered", userId = userId))
+            call.respond(HttpStatusCode.Created, RegisterResponse(token = token))
         } catch (e: IllegalArgumentException) {
             when (e.message) {
                 "Email already registered" -> {

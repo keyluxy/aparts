@@ -1,5 +1,6 @@
 package com.example.apartapp.data.repository
 
+import android.icu.math.BigDecimal
 import com.example.apartapp.data.remote.FavoritesApiService
 import com.example.apartapp.domain.model.Listing
 import com.example.apartapp.domain.repository.FavoritesRepository
@@ -18,11 +19,11 @@ class FavoritesRepositoryImpl @Inject constructor(
                 id = dto.id,
                 title = dto.title,
                 description = dto.description,
-                price = dto.price,
+                price = BigDecimal(dto.price),
                 district = dto.district,
-                city = dto.city,
+                city = dto.cityName,
                 rooms = dto.rooms,
-                url = dto.url,
+                url = dto.sourceUrl,
                 imageUrls = dto.imageUrls ?: emptyList(),
                 sourceName = dto.sourceName
             )

@@ -6,16 +6,16 @@ import com.example.apartapp.data.remote.FavoritesApiService
 import com.example.apartapp.data.remote.ListingsApiService
 import com.example.apartapp.data.remote.ParsingApiService
 import com.example.apartapp.data.remote.AdminApiService
+import com.example.apartapp.data.remote.UserApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Response
+import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
@@ -26,16 +26,13 @@ class NetworkModule {
 
     companion object {
         // Для эмулятора
-        // private const val BASE_URL = "http://10.0.2.2:8080/"
+//         private const val BASE_URL = "http://10.178.204.18:8080/"
+        private const val BASE_URL = "http://10.0.2.2:8080/"
         // Для реального устройства в локальной сети
-        private const val BASE_URL = "http://192.168.31.138:8080/"
+//        private const val BASE_URL = "http://192.168.31.138:8080/"
         // Для внешнего доступа
         // private const val BASE_URL = "https://cd20c175-22a4-4f7d-bc62-ef3bb2948d58.tunnel4.com"
     }
-
-    @Provides
-    @Singleton
-    fun provideJson(): Json = Json { ignoreUnknownKeys = true }
 
     @Provides
     @Singleton
@@ -62,9 +59,18 @@ class NetworkModule {
             .addInterceptor { chain ->
                 val request = chain.request()
                 android.util.Log.d("NetworkModule", "Request: ${request.method} ${request.url}")
+                
                 val response = chain.proceed(request)
+                val responseBody = response.body
+                val responseBodyString = responseBody?.string()
+                
                 android.util.Log.d("NetworkModule", "Response: ${response.code} ${response.message}")
-                response
+                android.util.Log.d("NetworkModule", "Response body: $responseBodyString")
+                
+                // Создаем новый response с тем же телом, так как оригинальное было прочитано
+                response.newBuilder()
+                    .body(responseBodyString?.let { ResponseBody.create(responseBody.contentType(), it) })
+                    .build()
             }
             .build()
     }
@@ -72,7 +78,6 @@ class NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        val contentType = "application/json".toMediaType()
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
@@ -104,5 +109,10 @@ class NetworkModule {
     @Singleton
     fun provideAdminApiService(retrofit: Retrofit): AdminApiService =
         retrofit.create(AdminApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideUserApiService(retrofit: Retrofit): UserApiService =
+        retrofit.create(UserApiService::class.java)
 }
 

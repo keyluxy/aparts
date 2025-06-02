@@ -1,20 +1,30 @@
 package com.example.apartapp.data.remote.dto
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import java.math.BigDecimal
 
+@Serializable
 data class ListingDto(
+    @SerialName("id")
     val id: Int,
+    @SerialName("title")
     val title: String,
-    val description: String? = null,
-    val price: BigDecimal,
-    val district: String? = null,
-    @SerializedName("sourceUrl")
-    val url: String? = null,
-    val imageUrls: List<String>? = null,
-    @SerializedName("cityName")
-    val city: String? = null,
-    val rooms: Int? = null,
-    val sourceName: String? = null
+    @SerialName("description")
+    val description: String?,
+    @SerialName("price")
+    val price: String,
+    @SerialName("district")
+    val district: String?,
+    @SerialName("sourceUrl")
+    val sourceUrl: String?,
+    @SerialName("imageUrls")
+    val imageUrls: List<String>?,
+    @SerialName("cityName")
+    val cityName: String?,
+    @SerialName("rooms")
+    val rooms: Int?,
+    @SerialName("sourceName")
+    val sourceName: String?
 )
 

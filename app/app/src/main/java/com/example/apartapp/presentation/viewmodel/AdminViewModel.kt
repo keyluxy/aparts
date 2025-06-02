@@ -52,11 +52,6 @@ class AdminViewModel @Inject constructor(
     private val _selectedImages = MutableStateFlow<List<Uri>>(emptyList())
     val selectedImages: StateFlow<List<Uri>> = _selectedImages
 
-    init {
-        loadCitiesAndSources()
-        loadUserInfo()
-    }
-
     private fun loadUserInfo() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -99,6 +94,11 @@ class AdminViewModel @Inject constructor(
             try {
                 val isAdminResult = adminRepository.checkAdminStatus()
                 _isAdmin.value = isAdminResult
+                
+                // Загружаем города и источники только если пользователь админ
+                if (isAdminResult) {
+                    loadCitiesAndSources()
+                }
             } catch (e: Exception) {
                 Log.e("AdminViewModel", "Error checking admin status", e)
                 _error.value = e.message
@@ -245,7 +245,7 @@ class AdminViewModel @Inject constructor(
                 )
 
                 Log.d("AdminViewModel", "Listing created successfully with ID: $listingId")
-                _successMessage.value = "Объявление успешно создано (ID: $listingId)"
+                _successMessage.value = "✅ Объявление успешно создано!\nНазвание: $title\nЦена: $price ₽\nГород: $cityName"
                 clearImages()
 
                 // Добавляем небольшую задержку перед обновлением списка

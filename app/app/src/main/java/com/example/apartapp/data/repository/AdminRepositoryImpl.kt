@@ -85,7 +85,7 @@ class AdminRepositoryImpl @Inject constructor(
 
         try {
             val response = apiService.createListing(request)
-            val id = response["id"] ?: throw IllegalStateException("No ID returned")
+            val id = response["listingId"] ?: throw IllegalStateException("No listingId returned")
             Log.d("AdminRepository", "Listing created successfully with ID: $id")
             return id
         } catch (e: Exception) {

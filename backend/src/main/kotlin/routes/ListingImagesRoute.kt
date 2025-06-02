@@ -2,6 +2,7 @@ package com.example.routes
 
 import com.example.database.tables.ListingImages
 import io.ktor.http.*
+import io.ktor.server.application.call
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.and

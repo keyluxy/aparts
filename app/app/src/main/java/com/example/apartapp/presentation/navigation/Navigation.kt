@@ -82,36 +82,54 @@ fun Navigation() {
             Log.d("Navigation", "Entering main graph, userId: $userId")
             
             val listingsVM = hiltViewModel<ListingsViewModel>()
-            val adminVM = hiltViewModel<AdminViewModel>()
             val userVM = hiltViewModel<UserViewModel>()
-            val isAdmin by adminVM.isAdmin.collectAsState()
-            val isLoading by adminVM.isLoading.collectAsState()
+            val adminVM = hiltViewModel<AdminViewModel>()
+            val userInfo by userVM.userInfo.collectAsState()
+            val isLoading by userVM.isLoading.collectAsState()
 
+            // Загружаем информацию о пользователе через UserRepository
             LaunchedEffect(userId) {
                 Log.d("Navigation", "Setting up user data, userId: $userId")
-                listingsVM.setUserId(userId)
-                adminVM.checkAdminStatus()
                 userVM.loadUserInfo()
             }
 
             if (isLoading) {
-                Log.d("Navigation", "Loading admin status...")
+                Log.d("Navigation", "Loading user data...")
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else {
-                Log.d("Navigation", "Admin status checked, isAdmin: $isAdmin")
-                // Перемещаем навигацию в LaunchedEffect для предотвращения мигания
-                LaunchedEffect(isAdmin) {
-                    if (isAdmin) {
-                        Log.d("Navigation", "Navigating to Admin screen")
-                        navController.navigate(Screen.Admin.route) {
+                // После получения информации о пользователе проверяем админский статус
+                LaunchedEffect(userInfo) {
+                    userInfo?.let { info ->
+                        Log.d("Navigation", "User info received: $info")
+                        if (info.isAdmin) {
+                            Log.d("Navigation", "User is admin, checking admin status...")
+                            adminVM.checkAdminStatus()
+                        }
+                        // Устанавливаем userId для ListingsViewModel в любом случае
+                        listingsVM.setUserId(userId)
+                        // Переходим на экран объявлений
+                        Log.d("Navigation", "Navigating to Listings screen")
+                        navController.navigate(Screen.Listings.route) {
                             popUpTo("main/$userId") { inclusive = true }
                             launchSingleTop = true
                         }
-                    } else {
-                        Log.d("Navigation", "Navigating to Listings screen")
-                        navController.navigate(Screen.Listings.route) {
+                    }
+                }
+
+                // Если пользователь админ, ждем подтверждения админского статуса
+                val isAdmin by adminVM.isAdmin.collectAsState()
+                val isAdminLoading by adminVM.isLoading.collectAsState()
+
+                if (userInfo?.isAdmin == true && isAdminLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (userInfo?.isAdmin == true && isAdmin) {
+                    LaunchedEffect(Unit) {
+                        Log.d("Navigation", "Navigating to Admin screen")
+                        navController.navigate(Screen.Admin.route) {
                             popUpTo("main/$userId") { inclusive = true }
                             launchSingleTop = true
                         }
@@ -123,18 +141,23 @@ fun Navigation() {
         // Экран списка объявлений
         composable(Screen.Listings.route) {
             val listingsVM = hiltViewModel<ListingsViewModel>()
-            val adminVM = hiltViewModel<AdminViewModel>()
             val userVM = hiltViewModel<UserViewModel>()
-            val isAdmin by adminVM.isAdmin.collectAsState()
-            val userId by userVM.userInfo.collectAsState().value?.id?.let { mutableStateOf(it) } ?: mutableStateOf(0)
+            val userInfo by userVM.userInfo.collectAsState()
+            val userId = userInfo?.id ?: 0
 
+            Log.d("Navigation", "ListingsScreen: userInfo=$userInfo, userId=$userId")
+
+            // Загружаем информацию о пользователе, если её ещё нет
             LaunchedEffect(Unit) {
-                userVM.loadUserInfo()
+                if (userInfo == null) {
+                    Log.d("Navigation", "ListingsScreen: Loading user info...")
+                    userVM.loadUserInfo()
+                }
             }
 
             Scaffold(
                 bottomBar = {
-                    if (isAdmin) {
+                    if (userInfo?.isAdmin == true) {
                         AdminBottomBar(navController = navController)
                     } else {
                         UserBottomBar(navController = navController)
@@ -149,9 +172,11 @@ fun Navigation() {
                     val filters by listingsVM.filters.collectAsState()
                     val scrollState = rememberLazyListState()
 
+                    // Загружаем объявления только если у нас есть userId
                     LaunchedEffect(userId) {
+                        Log.d("Navigation", "ListingsScreen: LaunchedEffect userId=$userId")
                         if (userId != 0) {
-                            listingsVM.setUserId(userId)
+                            Log.d("Navigation", "ListingsScreen: Fetching listings...")
                             listingsVM.fetchListings()
                         }
                     }

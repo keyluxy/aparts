@@ -97,7 +97,7 @@ fun AdminScreen(
                             modifier = Modifier.padding(16.dp)
                         ) {
                             Text(
-                                text = "Пользователь: ${user.username}",
+                                text = "Пользователь: ${user.email}",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )

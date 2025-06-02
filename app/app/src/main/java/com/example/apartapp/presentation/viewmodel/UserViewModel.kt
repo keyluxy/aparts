@@ -27,9 +27,12 @@ class UserViewModel @Inject constructor(
 
     fun loadUserInfo() {
         viewModelScope.launch {
+            Log.d("UserViewModel", "Starting to load user info...")
             _isLoading.value = true
             try {
-                _userInfo.value = userRepository.getUserInfo()
+                val info = userRepository.getUserInfo()
+                Log.d("UserViewModel", "User info loaded successfully: $info")
+                _userInfo.value = info
             } catch (e: Exception) {
                 Log.e("UserViewModel", "Error loading user info", e)
                 _error.value = e.message

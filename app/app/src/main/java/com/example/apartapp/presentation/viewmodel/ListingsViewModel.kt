@@ -1,5 +1,6 @@
 package com.example.apartapp.presentation.viewmodel
 
+import android.icu.math.BigDecimal
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -41,16 +42,18 @@ class ListingsViewModel @Inject constructor(
     private var userId: Int? = null
 
     init {
-        fetchListings()
         viewModelScope.launch {
             listingsRepository.refreshTrigger.collect {
-                fetchListings()
+                if (userId != null) {
+                    fetchListings()
+                }
             }
         }
     }
 
     fun setUserId(id: Int) {
         userId = id
+        fetchListings()
         loadFavorites()
     }
 
@@ -88,8 +91,8 @@ class ListingsViewModel @Inject constructor(
         val f = _filters.value
 
         _listings.value = all.filter { listing ->
-            val priceOk = (f.minPrice == null || listing.price >= f.minPrice) &&
-                    (f.maxPrice == null || listing.price <= f.maxPrice)
+            val priceOk = (f.minPrice == null || listing.price >= BigDecimal(f.minPrice.toString())) &&
+                    (f.maxPrice == null || listing.price <= BigDecimal(f.maxPrice.toString()))
 
             val roomsOk = when {
                 f.selectedRooms.isEmpty() -> true
@@ -106,7 +109,6 @@ class ListingsViewModel @Inject constructor(
                     }
                 }
             }
-
 
             val cityOk = f.city.isNullOrBlank() || listing.city.equals(f.city, ignoreCase = true)
             val sourceOk = f.selectedSources.isEmpty() || f.selectedSources.any { sel ->
