@@ -14,7 +14,7 @@ import java.math.BigDecimal
 import java.net.URI
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import com.example.model.ImageConfig
+import com.example.ImageConfig
 
 object CSVImporter {
     private val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME
@@ -85,14 +85,14 @@ object CSVImporter {
                     it[Listings.district] = district
                     it[Listings.createdAt] = createdAt
                     if (publicationDate != null) it[Listings.publicationDate] = publicationDate
-
                     it[Listings.sourceId] = sourceId
                     it[Listings.cityId] = cityId
-                    it[Listings.rooms] = rooms  // Записываем комнаты
+                    it[Listings.rooms] = rooms
                 } get Listings.id
 
                 // Обработка изображений с использованием относительного пути
                 val imageDir = File(ImageConfig.getImagesAbsolutePath(), relativeImagePath)
+                println("⏳ Пытаемся найти папку с изображениями по пути: ${imageDir.absolutePath}")
                 if (imageDir.exists() && imageDir.isDirectory) {
                     imageDir.listFiles { file ->
                         file.isFile && (file.extension.lowercase() in listOf("png", "jpg", "jpeg"))

@@ -61,14 +61,39 @@ class AdminService {
 
     fun findOrCreateSource(sourceName: String): Int {
         return transaction {
-            val existingSource = Sources.select { Sources.name eq sourceName }
-                .map { it[Sources.id] }
-                .singleOrNull()
+            val canonicalUrl = "https://example.com/source/${sourceName.lowercase().replace(" ", "-")}"
 
-            existingSource ?: Sources.insert {
+            // 1. Пытаемся найти существующий источник по каноническому URL
+            val existingSourceByCanonicalUrl = Sources.select { Sources.url eq canonicalUrl }
+                .firstOrNull()
+
+            if (existingSourceByCanonicalUrl != null) {
+                // Если источник с таким каноническим URL уже существует, возвращаем его ID
+                logger.info("Найден существующий источник по каноническому URL: $canonicalUrl, ID: ${existingSourceByCanonicalUrl[Sources.id]}")
+                return@transaction existingSourceByCanonicalUrl[Sources.id]
+            }
+
+            // 2. Если не найден по каноническому URL, пытаемся найти по sourceName
+            //    и обновляем его URL на канонический, если найден.
+            val existingSourceByName = Sources.select { Sources.name eq sourceName }
+                .firstOrNull()
+
+            if (existingSourceByName != null) {
+                // Найден по имени, но URL был неканоническим. Обновляем его URL.
+                Sources.update({ Sources.id eq existingSourceByName[Sources.id] }) {
+                    it[url] = canonicalUrl
+                }
+                logger.warn("Найден существующий источник по имени: $sourceName, но URL был неканоническим. Обновлен на: $canonicalUrl, ID: ${existingSourceByName[Sources.id]}")
+                return@transaction existingSourceByName[Sources.id]
+            }
+
+            // 3. Если ни один не найден, вставляем новый источник
+            val newSourceId = Sources.insert {
                 it[name] = sourceName
-                it[url] = "https://example.com/source/${sourceName.lowercase().replace(" ", "-")}"
+                it[url] = canonicalUrl
             }[Sources.id]
+            logger.info("Создан новый источник: $sourceName, URL: $canonicalUrl, ID: $newSourceId")
+            newSourceId
         }
     }
 
@@ -239,19 +264,39 @@ class AdminService {
                             it[Listings.rooms] = rooms
                         } get Listings.id
 
-                        // Обработка изображений, если они есть
-                        val imageData = row["image_data"]?.trim()
-                        if (!imageData.isNullOrEmpty()) {
-                            try {
-                                val imageBytes = Base64.getDecoder().decode(imageData)
-                                ListingImages.insert {
-                                    it[ListingImages.listingId] = listingId
-                                    it[ListingImages.imageData] = imageBytes
-                                    it[ListingImages.createdAt] = createdAt
+                        // Обработка изображений с использованием относительного пути из CSV
+                        val relativeImagePath = row["image_data"]?.trim()?.let { path ->
+                            // Если путь абсолютный, преобразуем его в относительный
+                            if (path.startsWith("/")) {
+                                val basePath = com.example.ImageConfig.getImagesAbsolutePath()
+                                if (path.startsWith(basePath)) {
+                                    path.substring(basePath.length).trimStart('/')
+                                } else {
+                                    path.substringAfterLast("/")
                                 }
-                            } catch (e: Exception) {
-                                logger.warn("Failed to import image for listing $listingId: ${e.message}")
+                            } else {
+                                path
                             }
+                        } ?: ""
+
+                        val imageDir = java.io.File(com.example.ImageConfig.getImagesAbsolutePath(), relativeImagePath)
+                        if (imageDir.exists() && imageDir.isDirectory) {
+                            imageDir.listFiles { file ->
+                                file.isFile && (file.extension.lowercase() in listOf("png", "jpg", "jpeg"))
+                            }?.forEach { imageFile ->
+                                try {
+                                    val imageDataBytes = imageFile.readBytes()
+                                    ListingImages.insert {
+                                        it[ListingImages.listingId] = listingId
+                                        it[ListingImages.imageData] = imageDataBytes
+                                        it[ListingImages.createdAt] = createdAt
+                                    }
+                                } catch (e: Exception) {
+                                    logger.warn("Failed to import image from file ${imageFile.name} for listing $listingId: ${e.message}")
+                                }
+                            }
+                        } else {
+                            logger.warn("Image directory not found for listing $listingId: ${imageDir.absolutePath}")
                         }
 
                         importedCount++

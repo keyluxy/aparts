@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter
 
 //const val baseUrl = "http://192.168.31.138:8080/"
 //private const val baseUrl = "https://cd20c175-22a4-4f7d-bc62-ef3bb2948d58.tunnel4.com"
-private const val baseUrl = "http://10.0.2.2:8080/"
+private const val baseUrl = "http://10.0.2.2:8080"
 
 fun Route.listingsRoutes() {
     route("/listings") {
@@ -68,6 +68,62 @@ fun Route.listingsRoutes() {
             }
         }
         call.respond(listings)
+            }
+
+            get("/{id}") {
+                val listingId = call.parameters["id"]?.toIntOrNull()
+                    ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid listing ID")
+
+                val formatter = DateTimeFormatter.ISO_DATE_TIME
+
+                val listing = transaction {
+                    (Listings innerJoin Sources innerJoin Cities)
+                        .slice(
+                            Listings.id,
+                            Listings.title,
+                            Listings.description,
+                            Listings.price,
+                            Listings.district,
+                            Listings.createdAt,
+                            Listings.publicationDate,
+                            Listings.sourceId,
+                            Listings.cityId,
+                            Listings.rooms,
+                            Sources.name,
+                            Sources.url,
+                            Cities.name
+                        )
+                        .select { Listings.id eq listingId }
+                        .firstOrNull()
+                        ?.let { row ->
+                            val imageUrls = ListingImages.select { ListingImages.listingId eq listingId }
+                                .map { imgRow ->
+                                    "$baseUrl/listings/$listingId/image?imageId=${imgRow[ListingImages.id]}"
+                                }
+                            ListingResponse(
+                                id = row[Listings.id],
+                                title = row[Listings.title],
+                                description = row[Listings.description],
+                                price = row[Listings.price].toString(),
+                                district = row[Listings.district],
+                                createdAt = row[Listings.createdAt]?.format(formatter),
+                                publicationDate = row[Listings.publicationDate]?.format(formatter),
+                                sourceId = row[Listings.sourceId],
+                                cityId = row[Listings.cityId],
+                                rooms = row[Listings.rooms],
+                                sourceName = row[Sources.name],
+                                sourceUrl = row[Sources.url],
+                                cityName = row[Cities.name],
+                                imageUrls = imageUrls
+                            )
+                        }
+                }
+
+                if (listing == null) {
+                    call.respond(HttpStatusCode.NotFound, "Listing not found")
+                } else {
+                    call.respond(listing)
+                }
             }
         }
     }

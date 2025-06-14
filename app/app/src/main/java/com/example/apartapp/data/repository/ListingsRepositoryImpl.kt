@@ -45,6 +45,30 @@ class ListingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getListingById(id: Int): Listing {
+        Log.d("ListingsRepository", "Fetching listing with ID: $id")
+        try {
+            val listingDto = apiService.getListingById(id)
+            Log.d("ListingsRepository", "Received listing from API: ${listingDto.title}")
+            
+            return Listing(
+                id = listingDto.id,
+                title = listingDto.title,
+                description = listingDto.description,
+                price = BigDecimal(listingDto.price),
+                district = listingDto.district,
+                city = listingDto.cityName,
+                rooms = listingDto.rooms,
+                url = listingDto.sourceUrl,
+                imageUrls = listingDto.imageUrls ?: emptyList(),
+                sourceName = listingDto.sourceName
+            )
+        } catch (e: Exception) {
+            Log.e("ListingsRepository", "Error fetching listing with ID: $id", e)
+            throw e
+        }
+    }
+
     override suspend fun triggerRefresh() {
         Log.d("ListingsRepository", "Triggering refresh...")
         _refreshTrigger.emit(Unit)

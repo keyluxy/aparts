@@ -305,10 +305,13 @@ fun Navigation() {
         ) { backStackEntry ->
             val listingId = backStackEntry.arguments?.getInt("listingId") ?: 0
             val listingsVM = hiltViewModel<ListingsViewModel>()
-            val listingsState by listingsVM.listings.collectAsState()
+            val selectedListing by listingsVM.selectedListing.collectAsState()
             val isLoading by listingsVM.isLoading.collectAsState()
             val errorMessage by listingsVM.errorMessage.collectAsState()
-            val listing = listingsState.find { it.id == listingId }
+
+            LaunchedEffect(listingId) {
+                listingsVM.getListingById(listingId)
+            }
 
             when {
                 isLoading -> {
@@ -316,9 +319,9 @@ fun Navigation() {
                         CircularProgressIndicator()
                     }
                 }
-                listing != null -> {
+                selectedListing != null -> {
                     ListingDetailScreen(
-                        listing = listing,
+                        listing = selectedListing!!,
                         onBackClick = { navController.popBackStack() }
                     )
                 }
@@ -326,17 +329,6 @@ fun Navigation() {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = "Ошибка: $errorMessage")
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { navController.popBackStack() }) {
-                                Text("Назад")
-                            }
-                        }
-                    }
-                }
-                else -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Объявление не найдено")
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { navController.popBackStack() }) {
                                 Text("Назад")

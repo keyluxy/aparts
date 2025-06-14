@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.SharedFlow
 
 interface ListingsRepository {
     suspend fun getListings(): List<Listing>
+    suspend fun getListingById(id: Int): Listing
     val refreshTrigger: SharedFlow<Unit>
     suspend fun triggerRefresh()
 }

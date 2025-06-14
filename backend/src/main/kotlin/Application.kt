@@ -20,6 +20,9 @@ import io.ktor.server.response.respondText
 import org.slf4j.LoggerFactory
 import org.jetbrains.exposed.sql.Database
 import java.io.File
+//import io.ktor.server.plugins.cors.routing.*
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpHeaders
 
 private val logger = LoggerFactory.getLogger("Application")
 
@@ -54,6 +57,20 @@ fun main() {
 fun Application.module() {
     try {
         logger.info("Starting application initialization...")
+        
+        // Настройка CORS
+//        install(CORS) {
+//            anyHost()
+//            allowMethod(HttpMethod.Get)
+//            allowMethod(HttpMethod.Post)
+//            allowMethod(HttpMethod.Put)
+//            allowMethod(HttpMethod.Delete)
+//            allowMethod(HttpMethod.Options)
+//            allowHeader(HttpHeaders.Authorization)
+//            allowHeader(HttpHeaders.ContentType)
+//            allowCredentials = true
+//        }
+        logger.info("CORS configured successfully")
         
         // Инициализация базы данных
         DatabaseInitializer.init()
@@ -95,6 +112,9 @@ fun Application.configureRouting(
             call.respondText("Hello World!")
         }
         
+        // Публичный маршрут для получения изображений
+        listingImageRoute()
+        
         // Маршруты аутентификации (регистрация и вход)
         authRoutes(authService)
         
@@ -106,9 +126,6 @@ fun Application.configureRouting(
             // Маршруты для работы с избранным
             favoritesRoutes()
             
-            // Маршруты для работы с изображениями
-            listingImageRoute()
-            
             // Маршруты для работы с пользователями
             userRoutes(userService)
             
@@ -119,4 +136,3 @@ fun Application.configureRouting(
 }
 
 
-// "/home/keylux/AMR/apart/backend/src/main/kotlin/uploads/"

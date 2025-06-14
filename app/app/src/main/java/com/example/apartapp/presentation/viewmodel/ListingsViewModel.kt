@@ -41,6 +41,9 @@ class ListingsViewModel @Inject constructor(
 
     private var userId: Int? = null
 
+    private val _selectedListing = MutableStateFlow<Listing?>(null)
+    val selectedListing: StateFlow<Listing?> = _selectedListing
+
     init {
         viewModelScope.launch {
             listingsRepository.refreshTrigger.collect {
@@ -142,6 +145,22 @@ class ListingsViewModel @Inject constructor(
                 } catch (e: HttpException) {
                     _error.value = e.message()
                 }
+            }
+        }
+    }
+
+    fun getListingById(id: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val listing = listingsRepository.getListingById(id)
+                _selectedListing.value = listing
+            } catch (e: Exception) {
+                Log.e("ListingsViewModel", "Error fetching listing details", e)
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
             }
         }
     }
