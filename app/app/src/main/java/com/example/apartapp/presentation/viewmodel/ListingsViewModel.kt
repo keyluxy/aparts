@@ -55,6 +55,7 @@ class ListingsViewModel @Inject constructor(
     }
 
     fun setUserId(id: Int) {
+        Log.d("ListingsViewModel", "Setting userId: $id")
         userId = id
         fetchListings()
         loadFavorites()
@@ -126,25 +127,40 @@ class ListingsViewModel @Inject constructor(
     private fun loadFavorites() {
         viewModelScope.launch {
             userId?.let { uid ->
-                _favoriteIds.value = favoritesRepository.getFavorites(uid).map { it.id }.toSet()
+                Log.d("ListingsViewModel", "Loading favorites for userId: $uid")
+                try {
+                    _favoriteIds.value = favoritesRepository.getFavorites(uid).map { it.id }.toSet()
+                    Log.d("ListingsViewModel", "Loaded favorites: ${_favoriteIds.value}")
+                } catch (e: Exception) {
+                    Log.e("ListingsViewModel", "Error loading favorites", e)
+                    _error.value = e.message
+                }
             }
         }
     }
 
     fun toggleFavorite(listing: Listing) {
+        Log.d("ListingsViewModel", "Toggling favorite for listing ${listing.id}, current userId: $userId")
         viewModelScope.launch {
             userId?.let { uid ->
                 try {
                     if (listing.id in _favoriteIds.value) {
+                        Log.d("ListingsViewModel", "Removing from favorites: ${listing.id}")
                         favoritesRepository.removeFavorite(uid, listing.id)
                         _favoriteIds.value -= listing.id
                     } else {
+                        Log.d("ListingsViewModel", "Adding to favorites: ${listing.id}")
                         favoritesRepository.addFavorite(uid, listing.id)
                         _favoriteIds.value += listing.id
                     }
-                } catch (e: HttpException) {
-                    _error.value = e.message()
+                    Log.d("ListingsViewModel", "Updated favorites: ${_favoriteIds.value}")
+                } catch (e: Exception) {
+                    Log.e("ListingsViewModel", "Error toggling favorite", e)
+                    _error.value = e.message ?: "Ошибка при работе с избранным"
                 }
+            } ?: run {
+                Log.e("ListingsViewModel", "Cannot toggle favorite: userId is null")
+                _error.value = "Не удалось определить пользователя"
             }
         }
     }

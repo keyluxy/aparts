@@ -44,8 +44,8 @@ sealed class Screen(val route: String) {
     data object Favorites : Screen("favorites")
     data object Admin : Screen("admin")
     data object Profile : Screen("profile")
-    data object ListingDetails : Screen("listing_details/{listingId}") {
-        fun createRoute(listingId: Int) = "listing_details/$listingId"
+    data object ListingDetails : Screen("listing_details/{userId}/{listingId}") {
+        fun createRoute(userId: Int, listingId: Int) = "listing_details/$userId/$listingId"
     }
 }
 
@@ -177,7 +177,7 @@ fun Navigation() {
                         Log.d("Navigation", "ListingsScreen: LaunchedEffect userId=$userId")
                         if (userId != 0) {
                             Log.d("Navigation", "ListingsScreen: Fetching listings...")
-                            listingsVM.fetchListings()
+                            listingsVM.setUserId(userId)
                         }
                     }
 
@@ -190,7 +190,9 @@ fun Navigation() {
                         onFilterChange = { listingsVM.updateFilters(it) },
                         onFavoriteToggle = { listing -> listingsVM.toggleFavorite(listing) },
                         scrollState = scrollState,
-                        onListingClick = { listingId -> navController.navigate(Screen.ListingDetails.createRoute(listingId)) }
+                        onListingClick = { listingId -> 
+                            navController.navigate(Screen.ListingDetails.createRoute(userId, listingId))
+                        }
                     )
                 }
             }
@@ -202,7 +204,8 @@ fun Navigation() {
             val adminVM = hiltViewModel<AdminViewModel>()
             val userVM = hiltViewModel<UserViewModel>()
             val isAdmin by adminVM.isAdmin.collectAsState()
-            val userId by userVM.userInfo.collectAsState().value?.id?.let { mutableStateOf(it) } ?: mutableStateOf(0)
+            val userInfo by userVM.userInfo.collectAsState()
+            val userId = userInfo?.id ?: 0
 
             LaunchedEffect(Unit) {
                 userVM.loadUserInfo()
@@ -231,7 +234,9 @@ fun Navigation() {
                         favorites = favorites,
                         isLoading = isLoading,
                         onFavoriteToggle = { listing -> favoritesVM.removeFavoriteAndRefresh(userId, listing.id) },
-                        onListingClick = { listingId -> navController.navigate(Screen.ListingDetails.createRoute(listingId)) },
+                        onListingClick = { listingId -> 
+                            navController.navigate(Screen.ListingDetails.createRoute(userId, listingId))
+                        },
                         onBackClick = { navController.popBackStack() }
                     )
                 }
@@ -301,13 +306,24 @@ fun Navigation() {
         // Экран деталей объявления
         composable(
             route = Screen.ListingDetails.route,
-            arguments = listOf(navArgument("listingId") { type = NavType.IntType })
+            arguments = listOf(
+                navArgument("userId") { type = NavType.IntType },
+                navArgument("listingId") { type = NavType.IntType }
+            )
         ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getInt("userId") ?: 0
             val listingId = backStackEntry.arguments?.getInt("listingId") ?: 0
             val listingsVM = hiltViewModel<ListingsViewModel>()
             val selectedListing by listingsVM.selectedListing.collectAsState()
             val isLoading by listingsVM.isLoading.collectAsState()
             val errorMessage by listingsVM.errorMessage.collectAsState()
+            val favoriteIds by listingsVM.favoriteIds.collectAsState()
+
+            // Устанавливаем userId для ListingsViewModel
+            LaunchedEffect(userId) {
+                Log.d("Navigation", "ListingDetails: Setting userId: $userId")
+                listingsVM.setUserId(userId)
+            }
 
             LaunchedEffect(listingId) {
                 listingsVM.getListingById(listingId)
@@ -322,6 +338,11 @@ fun Navigation() {
                 selectedListing != null -> {
                     ListingDetailScreen(
                         listing = selectedListing!!,
+                        isFavorite = selectedListing!!.id in favoriteIds,
+                        onFavoriteClick = { listing -> 
+                            Log.d("Navigation", "ListingDetails: Favorite clicked for listing ${listing.id}")
+                            listingsVM.toggleFavorite(listing)
+                        },
                         onBackClick = { navController.popBackStack() }
                     )
                 }

@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -30,11 +32,14 @@ import com.example.apartapp.domain.model.Listing
 @Composable
 fun ListingDetailScreen(
     listing: Listing,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteClick: (Listing) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val pagerState = rememberPagerState(pageCount = { listing.imageUrls.size })
+    val coroutineScope = rememberCoroutineScope()
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -48,9 +53,7 @@ fun ListingDetailScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
-                    .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .height(300.dp)
             ) {
                 if (listing.imageUrls.isNotEmpty()) {
                     HorizontalPager(
@@ -60,9 +63,35 @@ fun ListingDetailScreen(
                         AsyncImage(
                             model = listing.imageUrls[page],
                             contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
+                    }
+
+                    // Индикаторы страниц
+                    Row(
+                        Modifier
+                            .height(50.dp)
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .background(Color.Black.copy(alpha = 0.3f)),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(pagerState.pageCount) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) {
+                                Color.White
+                            } else {
+                                Color.White.copy(alpha = 0.5f)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .padding(2.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .size(8.dp)
+                            )
+                        }
                     }
                 } else {
                     Box(
@@ -81,43 +110,30 @@ fun ListingDetailScreen(
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
-                        .padding(16.dp)
                         .align(Alignment.TopStart)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.4f),
-                            shape = CircleShape
-                        )
-                        .size(40.dp)
+                        .padding(16.dp)
+                        .background(Color.Black.copy(alpha = 0.3f), CircleShape)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.Filled.ArrowBack,
                         contentDescription = "Назад",
                         tint = Color.White
                     )
                 }
-            }
 
-            // Индикатор страниц
-            if (listing.imageUrls.size > 1) {
-                Row(
+                // Кнопка "Избранное"
+                IconButton(
+                    onClick = { onFavoriteClick(listing) },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp, bottom = 6.dp),
-                    horizontalArrangement = Arrangement.Center
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .background(Color.Black.copy(alpha = 0.3f), CircleShape)
                 ) {
-                    repeat(listing.imageUrls.size) { index ->
-                        val color = if (pagerState.currentPage == index)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 3.dp)
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
+                        tint = if (isFavorite) Color.Red else Color.White
+                    )
                 }
             }
 
