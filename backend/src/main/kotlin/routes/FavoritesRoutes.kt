@@ -31,11 +31,11 @@ fun Route.favoritesRoutes() {
     route("/favorites") {
         authenticate("auth-jwt") {
             get("/{userId}") {
-                val userId = call.parameters["userId"]?.toIntOrNull()
-                if (userId == null) {
+        val userId = call.parameters["userId"]?.toIntOrNull()
+        if (userId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid user ID")
-                    return@get
-                }
+            return@get
+        }
 
                 // Проверяем существование пользователя
                 val userExists = transaction {
@@ -88,19 +88,19 @@ fun Route.favoritesRoutes() {
                                 cityName = row[Cities.name],
                                 imageUrls = imageUrls
                             )
-                        }
-                }
-                call.respond(favorites)
             }
+        }
+        call.respond(favorites)
+    }
 
             post("/{userId}/{listingId}") {
                 val userId = call.parameters["userId"]?.toIntOrNull()
-                val listingId = call.parameters["listingId"]?.toIntOrNull()
+        val listingId = call.parameters["listingId"]?.toIntOrNull()
 
-                if (userId == null || listingId == null) {
+        if (userId == null || listingId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid user ID or listing ID")
-                    return@post
-                }
+            return@post
+        }
 
                 // Проверяем существование пользователя и объявления
                 val exists = transaction {
@@ -111,8 +111,8 @@ fun Route.favoritesRoutes() {
 
                 if (!exists) {
                     call.respond(HttpStatusCode.NotFound, "User or listing not found")
-                    return@post
-                }
+                return@post
+            }
 
                 // Проверяем, не добавлено ли уже объявление в избранное
                 val alreadyFavorite = transaction {
@@ -121,8 +121,8 @@ fun Route.favoritesRoutes() {
 
                 if (alreadyFavorite) {
                     call.respond(HttpStatusCode.Conflict, "Listing already in favorites")
-                    return@post
-                }
+                return@post
+            }
 
                 transaction {
                     Favorites.insert {
@@ -135,13 +135,13 @@ fun Route.favoritesRoutes() {
             }
 
             delete("/{userId}/{listingId}") {
-                val userId = call.parameters["userId"]?.toIntOrNull()
-                val listingId = call.parameters["listingId"]?.toIntOrNull()
+        val userId = call.parameters["userId"]?.toIntOrNull()
+        val listingId = call.parameters["listingId"]?.toIntOrNull()
 
-                if (userId == null || listingId == null) {
+        if (userId == null || listingId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid user ID or listing ID")
-                    return@delete
-                }
+            return@delete
+        }
 
                 val deleted = transaction {
                     Favorites.deleteWhere { (Favorites.userId eq userId) and (Favorites.listingId eq listingId) }
@@ -151,8 +151,8 @@ fun Route.favoritesRoutes() {
                     call.respond(HttpStatusCode.OK, "Removed from favorites")
                 } else {
                     call.respond(HttpStatusCode.NotFound, "Favorite not found")
-                }
-            }
+        }
+    }
         }
     }
 }

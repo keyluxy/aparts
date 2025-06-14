@@ -14,6 +14,7 @@ import java.math.BigDecimal
 import java.net.URI
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.example.model.ImageConfig
 
 object CSVImporter {
     private val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME
@@ -39,7 +40,21 @@ object CSVImporter {
                     }
                 }
 
-                val imageBasePath = row["image_data"]?.trim() ?: ""
+                // Получаем относительный путь к изображениям из CSV
+                val relativeImagePath = row["image_data"]?.trim()?.let { path ->
+                    // Если путь абсолютный, преобразуем его в относительный
+                    if (path.startsWith("/")) {
+                        val basePath = ImageConfig.getImagesAbsolutePath()
+                        if (path.startsWith(basePath)) {
+                            path.substring(basePath.length).trimStart('/')
+                        } else {
+                            // Если путь не начинается с базового пути, используем только имя файла/папки
+                            path.substringAfterLast("/")
+                        }
+                    } else {
+                        path
+                    }
+                } ?: ""
 
                 val sourceUrl = row["url"]?.trim() ?: "default"
                 val sourceName = extractSourceNameFromUrl(sourceUrl) ?: "Неизвестно"
@@ -76,19 +91,22 @@ object CSVImporter {
                     it[Listings.rooms] = rooms  // Записываем комнаты
                 } get Listings.id
 
-                val folderIndex = index + 1
-                val imageDir = File("$imageBasePath/img_$folderIndex")
-
+                // Обработка изображений с использованием относительного пути
+                val imageDir = File(ImageConfig.getImagesAbsolutePath(), relativeImagePath)
                 if (imageDir.exists() && imageDir.isDirectory) {
                     imageDir.listFiles { file ->
                         file.isFile && (file.extension.lowercase() in listOf("png", "jpg", "jpeg"))
                     }?.forEach { imageFile ->
-                        val imageData = imageFile.readBytes()
-                        ListingImages.insert {
-                            it[ListingImages.listingId] = listingId
-                            it[ListingImages.imageData] = imageData
+                        try {
+                            val imageData = imageFile.readBytes()
+                            ListingImages.insert {
+                                it[ListingImages.listingId] = listingId
+                                it[ListingImages.imageData] = imageData
+                            }
+                            println("✅ Загружено изображение: ${imageFile.name} -> listing_id: $listingId")
+                        } catch (e: Exception) {
+                            println("⚠️ Ошибка при загрузке изображения ${imageFile.name}: ${e.message}")
                         }
-                        println("✅ Загружено изображение: ${imageFile.name} -> listing_id: $listingId")
                     }
                 } else {
                     println("⚠️ Папка с изображениями не найдена: ${imageDir.absolutePath}")
@@ -116,8 +134,6 @@ object CSVImporter {
         return null
     }
 
-
-
     private fun extractSourceNameFromUrl(url: String): String? {
         return when {
             url.contains("avito") -> "Avito"
@@ -127,14 +143,12 @@ object CSVImporter {
         }
     }
 
-
     private fun extractRoomsFromTitle(title: String): Int? {
         // Ищет шаблон: число + "к" или "к." (например, "1к", "2к.", "3к")
         val regex = Regex("""(\d+)\s*к(?:\.| квартира)?""", RegexOption.IGNORE_CASE)
         val match = regex.find(title)
         return match?.groups?.get(1)?.value?.toIntOrNull()
     }
-
 }
 
 fun main() {

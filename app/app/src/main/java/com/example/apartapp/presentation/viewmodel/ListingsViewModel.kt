@@ -45,7 +45,7 @@ class ListingsViewModel @Inject constructor(
         viewModelScope.launch {
             listingsRepository.refreshTrigger.collect {
                 if (userId != null) {
-                    fetchListings()
+                fetchListings()
                 }
             }
         }

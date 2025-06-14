@@ -4,6 +4,8 @@ import com.example.apartapp.data.remote.dto.AdminListingRequest
 import com.example.apartapp.data.remote.dto.CityDto
 import com.example.apartapp.data.remote.dto.SourceDto
 import com.example.apartapp.data.remote.dto.UserDto
+import com.example.apartapp.data.remote.dto.CsvImportRequest
+import com.example.apartapp.data.remote.dto.CsvImportResponse
 import retrofit2.http.*
 
 interface AdminApiService {
@@ -23,5 +25,5 @@ interface AdminApiService {
     suspend fun createListing(@Body request: AdminListingRequest): Map<String, Int>
 
     @POST("admin/listings/import")
-    suspend fun importListingsFromCsv(@Body csvContent: String): Map<String, Any>
+    suspend fun importListingsFromCsv(@Body request: CsvImportRequest): CsvImportResponse
 } 

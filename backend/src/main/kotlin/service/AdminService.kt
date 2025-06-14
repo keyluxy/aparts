@@ -195,13 +195,117 @@ class AdminService {
 
         logger.info("Import CSV: Starting import process")
         return try {
-            val importedCount = 123
+            val csvData = csvReader {
+                delimiter = ','
+                quoteChar = '"'
+            }.readAllWithHeader(csvContent)
+
+            var importedCount = 0
+            transaction {
+                csvData.forEach { row ->
+                    try {
+                        val title = row["title"] ?: return@forEach
+                        val description = row["description"]
+                        val price = row["price"]?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+                        val district = row["district"]
+                        val createdAt = LocalDateTime.now()
+                        val publicationDate = row["publication_date"]?.let {
+                            try {
+                                LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+
+                        val sourceUrl = row["url"]?.trim() ?: "default"
+                        val sourceName = extractSourceNameFromUrl(sourceUrl) ?: "Неизвестно"
+                        val sourceId = findOrCreateSource(sourceName)
+
+                        val cityName = extractCityFromUrl(sourceUrl) ?: "Unknown"
+                        val cityId = findOrCreateCity(cityName)
+
+                        // Извлекаем количество комнат из заголовка
+                        val rooms = extractRoomsFromTitle(title)
+
+                        val listingId = Listings.insert {
+                            it[Listings.title] = title
+                            it[Listings.description] = description
+                            it[Listings.price] = price
+                            it[Listings.district] = district
+                            it[Listings.createdAt] = createdAt
+                            if (publicationDate != null) it[Listings.publicationDate] = publicationDate
+                            it[Listings.sourceId] = sourceId
+                            it[Listings.cityId] = cityId
+                            it[Listings.rooms] = rooms
+                        } get Listings.id
+
+                        // Обработка изображений, если они есть
+                        val imageData = row["image_data"]?.trim()
+                        if (!imageData.isNullOrEmpty()) {
+                            try {
+                                val imageBytes = Base64.getDecoder().decode(imageData)
+                                ListingImages.insert {
+                                    it[ListingImages.listingId] = listingId
+                                    it[ListingImages.imageData] = imageBytes
+                                    it[ListingImages.createdAt] = createdAt
+                                }
+                            } catch (e: Exception) {
+                                logger.warn("Failed to import image for listing $listingId: ${e.message}")
+                            }
+                        }
+
+                        importedCount++
+                        logger.info("Successfully imported listing: $title")
+                    } catch (e: Exception) {
+                        logger.error("Failed to import row: ${e.message}")
+                        // Продолжаем импорт других строк даже если одна не удалась
+                    }
+                }
+            }
+
             logger.info("Import CSV: Successfully imported {} listings", importedCount)
             importedCount
         } catch (e: Exception) {
             logger.error("Import CSV: Error during import", e)
             throw IllegalArgumentException("Ошибка при импорте CSV: ${e.message}")
         }
+    }
+
+    private fun extractSourceNameFromUrl(url: String): String? {
+        return when {
+            url.contains("avito") -> "Avito"
+            url.contains("cian") -> "Циан"
+            url.contains("domclick") -> "Домклик"
+            else -> try {
+                java.net.URI(url).host
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun extractCityFromUrl(url: String): String? {
+        // Сначала пытаемся извлечь город из поддомена (например, "kazan" в "kazan.cian.ru")
+        val regexSubdomain = Regex("""https?://([a-zA-Z0-9\-]+)\.(?:cian\.ru|avito\.ru|domclick\.ru)""")
+        val matchSubdomain = regexSubdomain.find(url)
+        if (matchSubdomain != null) {
+            return matchSubdomain.groups[1]?.value
+        }
+
+        // Если не подходит под поддомен, пытаемся извлечь город из пути (например, avito.ru/moscow/...)
+        val regexPath = Regex("""https?://(?:www\.)?avito\.ru/([^/]+)/""")
+        val matchPath = regexPath.find(url)
+        if (matchPath != null) {
+            return matchPath.groups[1]?.value
+        }
+
+        return null
+    }
+
+    private fun extractRoomsFromTitle(title: String): Int? {
+        val regex = Regex("""(\d+)\s*к(?:\.| квартира)?""", RegexOption.IGNORE_CASE)
+        val match = regex.find(title)
+        return match?.groups?.get(1)?.value?.toIntOrNull()
     }
 
     fun getUserInfo(userId: Int): UserDto {

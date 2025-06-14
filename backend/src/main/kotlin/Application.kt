@@ -18,10 +18,30 @@ import favoritesRoutes
 import io.ktor.server.auth.authenticate
 import io.ktor.server.response.respondText
 import org.slf4j.LoggerFactory
+import org.jetbrains.exposed.sql.Database
+import java.io.File
 
 private val logger = LoggerFactory.getLogger("Application")
 
+// Конфигурация путей к изображениям
+object ImageConfig {
+    // Базовый путь к папке с изображениями относительно корня проекта
+    const val IMAGES_BASE_PATH = "uploads"
+    
+    // Получение абсолютного пути к папке с изображениями
+    fun getImagesAbsolutePath(): String {
+        return System.getProperty("user.dir") + "/" + IMAGES_BASE_PATH
+    }
+}
+
 fun main() {
+    // Создаем директорию для изображений, если она не существует
+    val imagesDir = File(ImageConfig.getImagesAbsolutePath())
+    if (!imagesDir.exists()) {
+        imagesDir.mkdirs()
+        logger.info("Created images directory at: ${imagesDir.absolutePath}")
+    }
+
     try {
         embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
             .start(wait = true)
@@ -97,3 +117,6 @@ fun Application.configureRouting(
         }
     }
 }
+
+
+// "/home/keylux/AMR/apart/backend/src/main/kotlin/uploads/"

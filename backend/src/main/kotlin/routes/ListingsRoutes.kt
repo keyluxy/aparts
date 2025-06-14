@@ -23,51 +23,51 @@ fun Route.listingsRoutes() {
     route("/listings") {
         authenticate("auth-jwt") {
             get {
-                val formatter = DateTimeFormatter.ISO_DATE_TIME
+        val formatter = DateTimeFormatter.ISO_DATE_TIME
 
-                val listings = transaction {
+        val listings = transaction {
                     (Listings innerJoin Sources innerJoin Cities)
                         .slice(
-                            Listings.id,
-                            Listings.title,
-                            Listings.description,
-                            Listings.price,
-                            Listings.district,
-                            Listings.createdAt,
-                            Listings.publicationDate,
-                            Listings.sourceId,
-                            Listings.cityId,
-                            Listings.rooms,
-                            Sources.name,
-                            Sources.url,
-                            Cities.name
+                Listings.id,
+                Listings.title,
+                Listings.description,
+                Listings.price,
+                Listings.district,
+                Listings.createdAt,
+                Listings.publicationDate,
+                Listings.sourceId,
+                Listings.cityId,
+                Listings.rooms,
+                Sources.name,
+                Sources.url,
+                Cities.name
                         )
                         .selectAll()
                         .map { row ->
-                            val listingId = row[Listings.id]
-                            val imageUrls = ListingImages.select { ListingImages.listingId eq listingId }
-                                .map { imgRow ->
-                                    "$baseUrl/listings/$listingId/image?imageId=${imgRow[ListingImages.id]}"
-                                }
-                            ListingResponse(
-                                id = listingId,
-                                title = row[Listings.title],
-                                description = row[Listings.description],
-                                price = row[Listings.price].toString(),
-                                district = row[Listings.district],
-                                createdAt = row[Listings.createdAt]?.format(formatter),
-                                publicationDate = row[Listings.publicationDate]?.format(formatter),
-                                sourceId = row[Listings.sourceId],
-                                cityId = row[Listings.cityId],
-                                rooms = row[Listings.rooms],
-                                sourceName = row[Sources.name],
-                                sourceUrl = row[Sources.url],
-                                cityName = row[Cities.name],
-                                imageUrls = imageUrls
-                            )
-                        }
-                }
-                call.respond(listings)
+                val listingId = row[Listings.id]
+                val imageUrls = ListingImages.select { ListingImages.listingId eq listingId }
+                    .map { imgRow ->
+                        "$baseUrl/listings/$listingId/image?imageId=${imgRow[ListingImages.id]}"
+                    }
+                ListingResponse(
+                    id = listingId,
+                    title = row[Listings.title],
+                    description = row[Listings.description],
+                    price = row[Listings.price].toString(),
+                    district = row[Listings.district],
+                    createdAt = row[Listings.createdAt]?.format(formatter),
+                    publicationDate = row[Listings.publicationDate]?.format(formatter),
+                    sourceId = row[Listings.sourceId],
+                    cityId = row[Listings.cityId],
+                    rooms = row[Listings.rooms],
+                    sourceName = row[Sources.name],
+                    sourceUrl = row[Sources.url],
+                    cityName = row[Cities.name],
+                    imageUrls = imageUrls
+                )
+            }
+        }
+        call.respond(listings)
             }
         }
     }

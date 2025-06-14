@@ -6,6 +6,7 @@ import com.example.apartapp.data.remote.dto.AdminListingRequest
 import com.example.apartapp.data.remote.dto.CityDto
 import com.example.apartapp.data.remote.dto.SourceDto
 import com.example.apartapp.data.remote.dto.UserDto
+import com.example.apartapp.data.remote.dto.CsvImportRequest
 import com.example.apartapp.domain.repository.AdminRepository
 import javax.inject.Inject
 
@@ -122,9 +123,8 @@ class AdminRepositoryImpl @Inject constructor(
         Log.d("AdminRepository", "Import CSV: Content size: ${csvContent.length} chars")
         Log.d("AdminRepository", "Import CSV: First 200 chars of content: ${csvContent.take(200)}")
 
-        // Удаляем всю логику преобразования строк на клиенте
-        // Оставляем только отправку исходного контента на сервер
-        val response = apiService.importListingsFromCsv(csvContent)
-        return response["importedCount"] as? Int ?: throw IllegalStateException("Не удалось получить количество импортированных объявлений")
+        val request = CsvImportRequest(content = csvContent)
+        val response = apiService.importListingsFromCsv(request)
+        return response.importedCount
     }
 } 

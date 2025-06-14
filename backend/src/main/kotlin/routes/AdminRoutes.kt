@@ -5,6 +5,8 @@ import com.example.routes.dto.AdminListingRequest
 import com.example.routes.dto.CityDto
 import com.example.routes.dto.ErrorResponse
 import com.example.routes.dto.UserDto
+import com.example.routes.dto.CsvImportRequest
+import com.example.routes.dto.CsvImportResponse
 import com.example.service.AdminService
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -103,12 +105,9 @@ fun Route.adminRoutes(adminService: AdminService) {
                 }
 
                 try {
-                    val csvContent = call.receiveText()
-                    val importedCount = adminService.importListingsFromCsv(userId, csvContent)
-                    call.respond(HttpStatusCode.OK, mapOf(
-                        "importedCount" to importedCount,
-                        "message" to "Successfully imported $importedCount listings"
-                    ))
+                    val request = call.receive<CsvImportRequest>()
+                    val importedCount = adminService.importListingsFromCsv(userId, request.content)
+                    call.respond(HttpStatusCode.OK, CsvImportResponse(importedCount = importedCount))
                 } catch (e: SecurityException) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse(e.message ?: "Access denied"))
                 } catch (e: Exception) {
